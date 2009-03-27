@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Main-Class: net.sourceforge.javacardsign.app.MainGUI
+Class-path: bouncycastle/bcprov-jdk16-142.jar
+
