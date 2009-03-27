@@ -11,7 +11,7 @@ mkdir $NAME/applet
 
 cp ../pkiapplet/bin/net/sourceforge/javacardsign/applet/javacard/applet.cap $NAME/applet
 
-cp README.txt lgpl*.txt pkihost.bat pkihost.sh $NAME
+cp README.txt lgpl*.txt pkihost.bat pkihost.sh files/* $NAME
 
 rm -rf `find $NAME -name ".svn"`
 

@@ -14,6 +14,7 @@
         <javaElement handleIdentifier="=pkihostapi/src"/>
         <file path="/pkihostapi/lgpl-3.0.txt"/>
         <file path="/pkihostapi/lgpl-2.1.txt"/>
+        <file path="/pkihostapi/README.txt"/>
         <javaElement handleIdentifier="=scuba_smartcards_j2se/src"/>
         <file path="/scuba_smartcards_j2se/LICENSE"/>
         <file path="/scuba_smartcards_j2se/README"/>
