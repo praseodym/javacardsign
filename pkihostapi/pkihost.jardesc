@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<jardesc>
+    <jar path="/home/sos/woj/workspace/pkihostapi/lib/pkihost.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/pkihostapi/pkihost.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+    <selectedProjects/>
+    <manifest generateManifest="false" manifestLocation="/pkihostapi/Manifest.mf" manifestVersion="1.0" reuseManifest="false" saveManifest="true" usesManifest="true">
+        <sealing sealJar="false">
+            <packagesToSeal/>
+            <packagesToUnSeal/>
+        </sealing>
+    </manifest>
+    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+        <javaElement handleIdentifier="=pkihostapi/src"/>
+        <file path="/pkihostapi/lgpl-3.0.txt"/>
+        <file path="/pkihostapi/lgpl-2.1.txt"/>
+        <javaElement handleIdentifier="=scuba_smartcards_j2se/src"/>
+        <file path="/scuba_smartcards_j2se/LICENSE"/>
+        <file path="/scuba_smartcards_j2se/README"/>
+    </selectedElements>
+</jardesc>
