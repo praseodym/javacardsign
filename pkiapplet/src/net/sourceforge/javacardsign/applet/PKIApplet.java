@@ -788,6 +788,7 @@ public class PKIApplet extends Applet implements ISO7816 {
         }
         byte[] buf = apdu.getBuffer();
         short lc = unsigned(buf[OFFSET_LC]);
+        apdu.setIncomingAndReceive();
         if(lc != 5) {
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
