@@ -145,7 +145,45 @@ To read out and use the PKI card:
    appear in the "Signature" box. Here you can also verify the
    signature with using the card's certificate. Just press Verify.
 
- * The "Challange" tab can be used at any point to prompt the PKI card
+ * The "Challenge" tab can be used at any point to prompt the PKI card
    for a challenge. This challenge can be used as a data to be signed
    in the signature tab. 
 
+Creating Certificates
+---------------------
+
+(Thanks to Ronan Le Meillat for this section)
+
+For testing can use your own certificates for example with openssl
+ 
+ * CA Self-signed Creation
+	openssl req -new -newkey rsa:2048 -keyout cakey.pem -nodes -out cacert.csr
+	openssl x509 -req -days 1200 -in cacert.csr -signkey cakey.pem -out cacert.pem
+
+ * Keys creation
+	openssl genrsa 1024 > authkey.pem
+	openssl genrsa 1024 > signkey.pem
+	openssl genrsa 1024 > deckey.pem
+
+ * Requests creation
+	openssl req -new -nodes -key authkey.pem -out authcert.csr
+	openssl req -new -nodes -key signkey.pem -out signcert.csr
+	openssl req -new -nodes -key deckey.pem -out deccert.csr
+
+ * Certificates signing
+	openssl x509 -req -CAcreateserial -CA cacert.pem -CAkey cakey.pem -in authcert.csr -out authcert.pem
+	openssl x509 -req -CAcreateserial -CA cacert.pem -CAkey cakey.pem -in signcert.csr -out signcert.pem
+	openssl x509 -req -CAcreateserial -CA cacert.pem -CAkey cakey.pem -in deccert.csr -out deccert.pem
+
+ * Certificates conversion
+	openssl x509 -in cacert.pem -outform der -out cacert.der
+	openssl x509 -in authcert.pem -outform der -out authcert.der
+	openssl x509 -in signcert.pem -outform der -out signcert.der
+	openssl x509 -in deccert.pem -outform der -out deccert.der
+
+ * Keys conversion
+	openssl pkcs8 -topk8 -in authkey.pem -nocrypt -outform der -out authkey.der
+	openssl pkcs8 -topk8 -in signkey.pem -nocrypt -outform der -out signkey.der
+	openssl pkcs8 -topk8 -in deckey.pem -nocrypt -outform der -out deckey.der
+	
+You now have authkey.der/authcert.der signkey.der/signcert.der deckey.der/deccert.der and cacert.der
