@@ -68,7 +68,8 @@ public class PKIPersoService extends PKIService {
 
     public static int USER_DEC_CERT_FID = 0x4104;
 
-    public static final byte[] fileStructure = { -1, 0x3F, 0x00, -1, 2, 7, 12, // MF
+    public static final byte[] fileStructure = {
+    		-1, 0x3F, 0x00, -1, 2, 7, 12, // MF
             0, 0x2F, 0x00, 0, 0x1E, // EF.DIR
             -1, 0x50, 0x15, 0, 9, 26, 31, 36, 41, 46, 51, 56, 61, 66, // DF.CIA
             0, 0x50, 0x32, 12, 0x12, // EF.CIAInfo
@@ -171,9 +172,9 @@ public class PKIPersoService extends PKIService {
 
             setKeys(authKeyId, signKeyId, decKeyId, authKey, signKey, decKey);
             setCertificate(CA_CERT_FID, caCert, false);
-            setCertificate(USER_AUTH_CERT_FID, userAuthCertificate, true);
-            setCertificate(USER_SIGN_CERT_FID, userSignCertificate, true);
-            setCertificate(USER_DEC_CERT_FID, userDecCertificate, true);
+            setCertificate(USER_AUTH_CERT_FID, userAuthCertificate, false); // NOTE: no PIN check on cert read. -- MO
+            setCertificate(USER_SIGN_CERT_FID, userSignCertificate, false); // NOTE: no PIN check on cert read. -- MO
+            setCertificate(USER_DEC_CERT_FID, userDecCertificate, false); // NOTE: no PIN check on cert read. -- MO
             CommonObjectAttributes authCoa = new CommonObjectAttributes(
                     "UserAuthKey", (byte) 0x01,
                     new byte[] { CommonObjectAttributes.FLAG_PRIVATE });
