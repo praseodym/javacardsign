@@ -22,10 +22,13 @@
 
 package net.sourceforge.javacardsign.service;
 
+import java.security.Provider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Map;
+
+import javax.smartcardio.TerminalFactory;
 
 import net.sourceforge.scuba.smartcards.CardEvent;
 import net.sourceforge.scuba.smartcards.CardManager;
@@ -55,6 +58,24 @@ public class PKIAppletManager {
         pkiServices = new Hashtable<CardService, PKIService>();
         listeners = new ArrayList<PKIAppletListener>();
         final CardManager cm = CardManager.getInstance();
+        
+        /* BEGIN MO TESTING */
+//		try {
+//			Class<?> jcopProviderClass = Class.forName("net.sourceforge.scuba.smartcards.JCOPTerminalProvider");
+//			Provider jcopProvider = (Provider)jcopProviderClass.newInstance();
+//			TerminalFactory jcopFactory = TerminalFactory.getInstance("JCOP", "localhost:8050", jcopProvider);
+//			cm.addTerminals(jcopFactory, true);
+//		} catch (ClassNotFoundException cnfe) {
+//			/* Ignore this provider... not installed */ 
+//		} catch (Exception e) {
+//			/* Ignore this provider */
+//			e.printStackTrace();
+//		}
+		/* END MO TESTING */
+        
+		System.out.println("DEBUG: " + cm);
+		
+		
         cm.addCardTerminalListener(new CardTerminalListener() {
 
             public void cardInserted(CardEvent ce) {
