@@ -22,6 +22,7 @@
 
 package net.sourceforge.javacardsign.service;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateCrtKey;
@@ -78,7 +79,7 @@ public class PKIPersoService extends PKIService {
     public static int USER_DEC_CERT_FID = 0x4104;
 
     /**
-     * The data structure hierarchical file system for the file system in our
+     * The hierarchical structure for the file system in our
      * applet. The data is as follows, concatenated in sequence:
      * 
      * byte 0: -1/0 -1 for DF, 0 for EF
@@ -119,12 +120,7 @@ public class PKIPersoService extends PKIService {
      */
     public void setHistoricalBytes(byte[] histBytes)
             throws CardServiceException {
-        byte[] apdu = new byte[6 + histBytes.length];
-        apdu[1] = INS_PUTDATA;
-        apdu[2] = 0x67;
-        apdu[4] = (byte) (histBytes.length & 0xff);
-        System.arraycopy(histBytes, 0, apdu, 5, histBytes.length);
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, 0x67, 0, histBytes);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "setHistoricalBytes failed: ");
     }
@@ -148,14 +144,7 @@ public class PKIPersoService extends PKIService {
      *             on errors
      */
     public void setPUC(String puc) throws CardServiceException {
-        byte[] apdu = new byte[6 + puc.length()];
-        apdu[1] = INS_CHANGEREFERENCEDATA;
-        apdu[2] = 0x01;
-        apdu[4] = (byte) (puc.length() & 0xff);
-        for (int i = 0; i < puc.length(); i++) {
-            apdu[5 + i] = (byte) puc.charAt(i);
-        }
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_CHANGEREFERENCEDATA, 0x01, 0x00, puc.getBytes());
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "setPUC failed: ");
     }
@@ -170,12 +159,7 @@ public class PKIPersoService extends PKIService {
      *             on error
      */
     public void setState(byte state) throws CardServiceException {
-        byte[] apdu = new byte[5];
-        apdu[1] = INS_PUTDATA;
-        apdu[2] = 0x68;
-        apdu[3] = state;
-        apdu[4] = 0;
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, 0x68, state);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "setState failed: ");
     }
@@ -195,15 +179,12 @@ public class PKIPersoService extends PKIService {
      */
     public void createFile(int fid, int length, boolean pin)
             throws CardServiceException {
-        byte[] apdu = new byte[10];
-        apdu[1] = INS_CREATEFILE;
-        apdu[4] = 5;
-        apdu[5] = (byte) (fid >> 8);
-        apdu[6] = (byte) (fid & 0xFF);
-        apdu[7] = (byte) (length >> 8);
-        apdu[8] = (byte) (length & 0xFF);
-        apdu[9] = (byte) (pin ? 0x01 : 0x00);
-        CommandAPDU c = new CommandAPDU(apdu);
+        byte[] data = {
+          (byte) (fid >> 8), (byte) (fid & 0xFF),
+          (byte) (length >> 8), (byte) (length & 0xFF),
+          (byte) (pin ? 0x01 : 0x00)
+        };
+        CommandAPDU c = new CommandAPDU(0, INS_CREATEFILE, 0, 0, data);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "createFile failed: ");
     }
@@ -226,13 +207,9 @@ public class PKIPersoService extends PKIService {
      */
     public void writeFile(byte[] data, short dOffset, byte dLen, short fOffset)
             throws CardServiceException {
-        byte[] apdu = new byte[6 + (dLen & 0xFF)];
-        apdu[1] = INS_WRITEBINARY;
-        apdu[2] = (byte) (fOffset >> 8);
-        apdu[3] = (byte) (fOffset & 0xFF);
-        apdu[4] = dLen;
-        System.arraycopy(data, dOffset, apdu, 5, (dLen & 0xff));
-        CommandAPDU c = new CommandAPDU(apdu);
+        ByteArrayOutputStream apduData = new ByteArrayOutputStream();
+        apduData.write(data, dOffset, dLen);
+        CommandAPDU c = new CommandAPDU(0, INS_WRITEBINARY, (byte) (fOffset >> 8), (byte) (fOffset & 0xFF), apduData.toByteArray());
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "writeFile failed: ");
     }
@@ -469,12 +446,7 @@ public class PKIPersoService extends PKIService {
      *             on errors
      */
     private void createFileStructure(byte[] fs) throws CardServiceException {
-        byte[] apdu = new byte[5 + fs.length];
-        apdu[1] = INS_PUTDATA;
-        apdu[2] = 0x69;
-        apdu[4] = (byte) fs.length;
-        System.arraycopy(fs, 0, apdu, 5, fs.length);
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, 0x69, 0x00, fs);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "createFileStructure failed: ");
     }
@@ -513,15 +485,8 @@ public class PKIPersoService extends PKIService {
 
         byte[][] keyIds = new byte[][] { authKeyId, signKeyId, decKeyId };
 
-        byte[] apdu = new byte[6 + authKeyId.length];
-        apdu[1] = INS_PUTDATA;
-        apdu[2] = 0x01;
-
         for (int i = 0; i < keyIds.length; i++) {
-            apdu[2] = (byte) (0x61 + i);
-            apdu[4] = (byte) (keyIds[i].length & 0xff);
-            System.arraycopy(keyIds[i], 0, apdu, 5, keyIds[i].length);
-            CommandAPDU c = new CommandAPDU(apdu);
+            CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, 0x01, (byte) (0x61 + i), keyIds[i]);
             ResponseAPDU r = service.transmit(c);
             checkSW(r, "setKeys1 failed: ");
         }
@@ -546,13 +511,7 @@ public class PKIPersoService extends PKIService {
         for (int keyId = 0; keyId < 3; keyId++) {
             for (int keyPart = 0; keyPart < 7; keyPart++) {
                 byte[] keyData = keys[keyId][keyPart];
-                apdu = new byte[6 + keyData.length];
-                apdu[1] = INS_PUTDATA;
-                apdu[2] = (byte) (keyId + 0x64);
-                apdu[3] = (byte) (keyPart + 0x81);
-                apdu[4] = (byte) keyData.length;
-                System.arraycopy(keyData, 0, apdu, 5, keyData.length);
-                CommandAPDU c = new CommandAPDU(apdu);
+                CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, (byte) (keyId + 0x64), (byte) (keyPart + 0x81), keyData);
                 ResponseAPDU r = service.transmit(c);
                 checkSW(r, "setKeys2 failed: ");
             }
