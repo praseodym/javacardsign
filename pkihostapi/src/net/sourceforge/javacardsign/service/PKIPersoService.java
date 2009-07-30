@@ -52,6 +52,12 @@ import net.sourceforge.javacardsign.iso7816_15.X509CertificateAttributes;
 import net.sourceforge.scuba.smartcards.CardService;
 import net.sourceforge.scuba.smartcards.CardServiceException;
 
+/**
+ * Personalisation service for our PKI applet.
+ * 
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class PKIPersoService extends PKIService {
 
     public static final String DEFAULT_PUC = "0123456789012345";
@@ -172,9 +178,9 @@ public class PKIPersoService extends PKIService {
 
             setKeys(authKeyId, signKeyId, decKeyId, authKey, signKey, decKey);
             setCertificate(CA_CERT_FID, caCert, false);
-            setCertificate(USER_AUTH_CERT_FID, userAuthCertificate, false); // NOTE: no PIN check on cert read. -- MO
-            setCertificate(USER_SIGN_CERT_FID, userSignCertificate, false); // NOTE: no PIN check on cert read. -- MO
-            setCertificate(USER_DEC_CERT_FID, userDecCertificate, false); // NOTE: no PIN check on cert read. -- MO
+            setCertificate(USER_AUTH_CERT_FID, userAuthCertificate, false);
+            setCertificate(USER_SIGN_CERT_FID, userSignCertificate, false);
+            setCertificate(USER_DEC_CERT_FID, userDecCertificate, false);
             CommonObjectAttributes authCoa = new CommonObjectAttributes(
                     "UserAuthKey", (byte) 0x01,
                     new byte[] { CommonObjectAttributes.FLAG_PRIVATE });

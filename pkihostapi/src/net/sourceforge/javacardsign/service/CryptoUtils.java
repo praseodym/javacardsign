@@ -46,7 +46,7 @@ import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
- * Bunch of cryptographic routine helper methods
+ * Bunch of cryptographic helper methods
  * 
  * @author Wojciech Mostowski <woj@cs.ru.nl>
  * 

@@ -24,6 +24,12 @@ package net.sourceforge.javacardsign.service;
 
 import java.util.EventObject;
 
+/**
+ * Event object use to notify clients about PKI card presence/absence changes.
+ * 
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class PKIAppletEvent extends EventObject {
     public static final int REMOVED = 0, INSERTED = 1;
 
