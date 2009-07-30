@@ -34,6 +34,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
 import java.io.*;
 
 import javax.crypto.BadPaddingException;
@@ -44,12 +45,27 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+/**
+ * Bunch of cryptographic routine helper methods
+ * 
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ * 
+ */
 public class CryptoUtils {
 
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
 
+    /**
+     * Encrypts the plain text with RSA PKCS15 cipher.
+     * 
+     * @param key
+     *            the public key
+     * @param text
+     *            the plain text
+     * @return the cipher text, null on errors
+     */
     public static byte[] pkcs1Encrypt(PublicKey key, byte[] text) {
         try {
             Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
@@ -60,18 +76,39 @@ public class CryptoUtils {
         }
     }
 
+    /**
+     * Decrypts the given cipher text with the RSA PKCS15 cipher and compares to
+     * the expected result.
+     * 
+     * @param key
+     *            the publick key
+     * @param text
+     *            the cipher text
+     * @param shouldbe
+     *            the expecetd plain text
+     * @return true if the comparison is succesful, null on errors
+     */
     public static boolean pkcs1DecryptCompare(PublicKey key, byte[] text,
             byte[] shouldbe) {
         try {
             Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             c.init(Cipher.DECRYPT_MODE, key);
             text = c.doFinal(text);
-            return compare(text, shouldbe);
+            return Arrays.equals(text, shouldbe);
         } catch (Exception e) {
             return false;
         }
     }
 
+    /**
+     * Signs the text according to the RSA PKCS15 algorithm.
+     * 
+     * @param key
+     *            the private key
+     * @param text
+     *            the text to be signed
+     * @return the signed text, null on errors
+     */
     public static byte[] pkcs1Sign(PrivateKey key, byte[] text) {
         try {
             Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
@@ -82,16 +119,19 @@ public class CryptoUtils {
         }
     }
 
-    public static boolean compare(byte[] t1, byte[] t2) {
-        if (t1 == null || t2 == null || t1.length != t2.length)
-            return false;
-        for (int i = 0; i < t1.length; i++) {
-            if (t1[i] != t2[i])
-                return false;
-        }
-        return true;
-    }
-
+    /**
+     * Verfies an RSA PKCS15 signature
+     * 
+     * @param key
+     *            the public key
+     * @param text
+     *            the text (supposedly) signed
+     * @param signature
+     *            the signature
+     * @param sha256
+     *            whether SHA256 was used, if false SHA1 assumed
+     * @return whether the signature is correct, null on errors
+     */
     public static boolean pkcs1Verify(PublicKey key, byte[] text,
             byte[] signature, boolean sha256) {
         String algName = sha256 ? "SHA256withRSA" : "SHA1withRSA";
@@ -106,10 +146,34 @@ public class CryptoUtils {
         }
     }
 
+    /**
+     * Create the RSA-PSS signature.
+     * 
+     * @param key
+     *            the private key
+     * @param text
+     *            the text
+     * @param doHash
+     *            should be false if text is already a hash of the DTBS
+     * @return the signed data, null on errors
+     */
     public static byte[] pssSign(PrivateKey key, byte[] text, boolean doHash) {
         return pssSign(null, key, text, doHash);
     }
 
+    /**
+     * Create the RSA-PSS signature.
+     * 
+     * @param salt
+     *            possible salt to be used, if null a new one will be generated
+     * @param key
+     *            the private key
+     * @param text
+     *            the text
+     * @param doHash
+     *            should be false if text is already a hash of the DTBS
+     * @return the signed data, null on errors
+     */
     public static byte[] pssSign(byte[] salt, PrivateKey key, byte[] text,
             boolean doHash) {
 
@@ -144,6 +208,17 @@ public class CryptoUtils {
         }
     }
 
+    /**
+     * Verifies the RSA-PSS signature.
+     * 
+     * @param key
+     *            the public key
+     * @param text
+     *            the text (supposedly) signed
+     * @param signature
+     *            the signature
+     * @return true if the signature is correct
+     */
     public static boolean pssVerify(PublicKey key, byte[] text, byte[] signature) {
         try {
             // The two algorithms are the same
@@ -158,6 +233,18 @@ public class CryptoUtils {
 
     }
 
+    /**
+     * Hashes the input text according to the specified alg. and possibly wraps
+     * it up into a DER object.
+     * 
+     * @param algName
+     *            the algoritm name, Java JCE style
+     * @param text
+     *            the text to be hashed
+     * @param derWrapped
+     *            whether the result should be DER wrapped
+     * @return the required result, null on errors
+     */
     public static byte[] getHash(String algName, byte[] text, boolean derWrapped) {
         try {
             MessageDigest md = MessageDigest.getInstance(algName);
@@ -176,6 +263,8 @@ public class CryptoUtils {
         }
     }
 
+    // Do the PSS padding, BouncyCastle can do this, but this is
+    // useful for some testing and taking the RSA-PSS alg. apart.
     private static byte[] pssPad(byte[] salt, byte[] text, boolean doHash,
             int emLen) {
         try {
@@ -225,6 +314,13 @@ public class CryptoUtils {
         }
     }
 
+    /**
+     * Read in and parse a PKCS8 encoded RSA private key from a DER file.
+     * 
+     * @param fileName
+     *            the file name
+     * @return the parsed key, null on errors
+     */
     public static PrivateKey readPrivateKeyFromDER(String fileName) {
         try {
             InputStream fl = fullStream(fileName);
@@ -241,6 +337,13 @@ public class CryptoUtils {
         }
     }
 
+    /**
+     * Read in and parse a X509 certificate from a DER encoded file
+     * 
+     * @param fileName
+     *            the file name
+     * @return the parsed certificate, null on errors
+     */
     public static X509Certificate readCertFromDER(String fileName) {
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X509");
@@ -253,11 +356,17 @@ public class CryptoUtils {
         }
     }
 
+    // Buffers in the whole file, gives back an input stream
     private static InputStream fullStream(String fname) throws IOException {
-        DataInputStream dis = new DataInputStream(new FileInputStream(fname));
-        byte[] bytes = new byte[dis.available()];
-        dis.readFully(bytes);
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        InputStream in = new DataInputStream(new FileInputStream(fname));
+        ByteArrayOutputStream collect = new ByteArrayOutputStream();
+        int c = in.read();
+        while (c != -1) {
+            collect.write(c);
+            c = in.read();
+        }
+        ByteArrayInputStream bais = new ByteArrayInputStream(collect
+                .toByteArray());
         return bais;
     }
 
