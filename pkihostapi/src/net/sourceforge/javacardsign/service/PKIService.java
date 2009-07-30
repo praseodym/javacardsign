@@ -115,13 +115,8 @@ public class PKIService extends CardService {
      *             on errors
      */
     public void selectFile(short id) throws CardServiceException {
-        byte[] apdu = new byte[5 + 3];
-        apdu[1] = INS_SELECT;
-        apdu[4] = 2;
-        apdu[5] = (byte) (id >> 8);
-        apdu[6] = (byte) (id & 0xFF);
-        apdu[7] = (byte) 0;
-        CommandAPDU c = new CommandAPDU(apdu);
+        byte[] data = { (byte) (id >> 8), (byte) (id & 0xFF)};
+        CommandAPDU c = new CommandAPDU(0, INS_SELECT, 0, 0, data, 256);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "selectFile failed: ");
     }
@@ -138,14 +133,10 @@ public class PKIService extends CardService {
      *             on errors
      */
     public byte[] readFile(short offset, byte len) throws CardServiceException {
-        byte[] apdu = new byte[5];
-        apdu[1] = INS_READBINARY;
-        apdu[2] = (byte) (offset >> 8);
-        apdu[3] = (byte) (offset & 0xFF);
-        apdu[4] = len;
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_READBINARY, (byte) (offset >> 8), (byte) (offset & 0xFF), len);
         ResponseAPDU r = service.transmit(c);
         byte[] result = r.getBytes();
+        
         if (result[result.length - 2] == 0x62
                 && result[result.length - 1] == (byte) 0x82) {
             result[result.length - 2] = (byte) 0x90;
@@ -213,11 +204,7 @@ public class PKIService extends CardService {
      *             on unsuccessful PIN verification or error
      */
     public void verifyPIN(byte[] pinData) throws CardServiceException {
-        byte[] apdu = new byte[5 + pinData.length];
-        apdu[1] = INS_VERIFY;
-        apdu[4] = (byte) pinData.length;
-        System.arraycopy(pinData, 0, apdu, 5, pinData.length);
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_VERIFY, 0, 0, pinData);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "verifyPIN failed: ");
     }
@@ -234,12 +221,15 @@ public class PKIService extends CardService {
      */
     public void changePIN(byte[] pucData, byte[] pinData)
             throws CardServiceException {
-        byte[] apdu = new byte[5 + pucData.length + pinData.length];
-        apdu[1] = INS_CHANGEREFERENCEDATA;
-        apdu[4] = (byte) (pucData.length + pinData.length);
-        System.arraycopy(pucData, 0, apdu, 5, pucData.length);
-        System.arraycopy(pinData, 0, apdu, 5 + pucData.length, pinData.length);
-        CommandAPDU c = new CommandAPDU(apdu);
+        ByteArrayOutputStream apduData = new ByteArrayOutputStream();
+        try {
+          apduData.write(pucData);
+          apduData.write(pinData);
+        }catch(IOException ioe) {
+            // Should not happen, just in case
+            ioe.printStackTrace();
+        }
+        CommandAPDU c = new CommandAPDU(0, INS_CHANGEREFERENCEDATA, 0, 0, apduData.toByteArray());
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "changePIN failed: ");
     }
@@ -258,10 +248,7 @@ public class PKIService extends CardService {
             throw new IllegalArgumentException(
                     "Lenght must be between 1 and 256 inclusive.");
         }
-        byte[] apdu = new byte[5];
-        apdu[1] = INS_GETCHALLENGE;
-        apdu[4] = (byte) (length == 256 ? 0 : length);
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_GETCHALLENGE, 0, 0, length);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "getChallenge failed: ");
         return r.getData();
@@ -333,53 +320,38 @@ public class PKIService extends CardService {
      */
     public byte[] decipher(byte[] cipherBlock, byte expLen)
             throws CardServiceException {
-        byte[] apdu1 = null;
-        byte[] apdu2 = null;
+        ByteArrayOutputStream apduData = new ByteArrayOutputStream();
+        CommandAPDU apdu1 = null;
+        CommandAPDU apdu2 = null;
         int maxBlock = 126; // 254
         int blockSize = 60; // 128
         if (cipherBlock.length > maxBlock) {
-            apdu1 = new byte[6 + blockSize];
-            apdu1[0] = 0x10;
-            apdu1[1] = INS_PSO;
-            apdu1[2] = (byte) 0x80;
-            apdu1[3] = (byte) 0x86;
-            apdu1[4] = (byte) (blockSize);
-            System.arraycopy(cipherBlock, 0, apdu1, 5, blockSize);
-            apdu1[5 + blockSize] = expLen;
+            apduData.write(cipherBlock, 0, blockSize);
+            apdu1 = new CommandAPDU((byte)0x10, INS_PSO, (byte) 0x80, (byte) 0x86, apduData.toByteArray(), expLen);
 
-            apdu2 = new byte[6 + cipherBlock.length - blockSize];
-            apdu2[1] = INS_PSO;
-            apdu2[2] = (byte) 0x80;
-            apdu2[3] = (byte) 0x86;
-            apdu2[4] = (byte) (cipherBlock.length - blockSize);
-            System.arraycopy(cipherBlock, blockSize, apdu2, 5,
-                    cipherBlock.length - blockSize);
-            apdu2[5 + cipherBlock.length - blockSize] = expLen;
+            apduData.reset();
+            apduData.write(cipherBlock, blockSize, cipherBlock.length - blockSize);
+            apdu2 = new CommandAPDU(0, INS_PSO, (byte) 0x80, (byte) 0x86, apduData.toByteArray(), expLen);
         } else {
-            apdu2 = new byte[6 + cipherBlock.length];
-            apdu2[1] = INS_PSO;
-            apdu2[2] = (byte) 0x80;
-            apdu2[3] = (byte) 0x86;
-            apdu2[4] = (byte) (cipherBlock.length);
-            System.arraycopy(cipherBlock, 0, apdu2, 5, cipherBlock.length);
-            apdu2[5 + cipherBlock.length] = expLen;
+            apdu2 = new CommandAPDU(0, INS_PSO, (byte) 0x80, (byte) 0x86, cipherBlock, expLen);
         }
         byte[] res1 = new byte[0];
         if (apdu1 != null) {
-            CommandAPDU c = new CommandAPDU(apdu1);
-            ResponseAPDU r = service.transmit(c);
+            ResponseAPDU r = service.transmit(apdu1);
             checkSW(r, "decipher1 failed: ");
             res1 = r.getData();
         }
-        CommandAPDU c = new CommandAPDU(apdu2);
-        ResponseAPDU r = service.transmit(c);
+        ResponseAPDU r = service.transmit(apdu2);
         checkSW(r, "decipher2 failed: ");
-        byte[] res2 = r.getData();
 
-        byte[] res = new byte[res1.length + res2.length];
-        System.arraycopy(res1, 0, res, 0, res1.length);
-        System.arraycopy(res2, 0, res, res1.length, res2.length);
-        return res;
+        apduData.reset();
+        try{
+          apduData.write(res1);
+          apduData.write(r.getData());
+        }catch(IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return apduData.toByteArray();
     }
 
     /**
@@ -397,14 +369,7 @@ public class PKIService extends CardService {
      */
     public byte[] computeDigitalSignature(byte[] text, byte expLen)
             throws CardServiceException {
-        byte[] apdu = new byte[6 + text.length];
-        apdu[1] = INS_PSO;
-        apdu[2] = (byte) 0x9E;
-        apdu[3] = (byte) 0x9A;
-        apdu[4] = (byte) text.length;
-        System.arraycopy(text, 0, apdu, 5, text.length);
-        apdu[5 + text.length] = expLen;
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_PSO, (byte) 0x9E, (byte) 0x9A, text, expLen);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "computeDigitalSignature failed: ");
         return r.getData();
@@ -425,12 +390,7 @@ public class PKIService extends CardService {
      */
     public byte[] internalAuthenticate(byte[] text, byte expLen)
             throws CardServiceException {
-        byte[] apdu = new byte[6 + text.length];
-        apdu[1] = INS_INTERNALAUTHENTICATE;
-        apdu[4] = (byte) text.length;
-        System.arraycopy(text, 0, apdu, 5, text.length);
-        apdu[5 + text.length] = expLen;
-        CommandAPDU c = new CommandAPDU(apdu);
+        CommandAPDU c = new CommandAPDU(0, INS_INTERNALAUTHENTICATE, 0, 0, text, expLen);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "computeDigitalSignature failed: ");
         return r.getData();
