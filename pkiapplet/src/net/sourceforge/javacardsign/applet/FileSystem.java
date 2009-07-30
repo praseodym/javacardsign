@@ -46,6 +46,25 @@ final class FileSystem {
 
     private short totalFiles = 0;
 
+    /** Stores the file structure information for this file system.
+     * The initial contents of this array should be following the pattern below,
+     * see also the documentation in the pkihostapi library, the PKIPersoService class.
+     *
+     * The hierarchical structure for the file system in our
+     * applet. The data is as follows, concatenated in sequence:
+     * 
+     * byte 0: -1/0 -1 for DF, 0 for EF
+     * byte 1, 2: fid msb, fid lsb
+     * byte 3: index to the parent in this array, -1 of root node
+     * byte 4: for EF the SFI of this file
+     *         for DF number of children nodes, the list of indexes to the
+     *         children follow.
+     * 
+     * When EF files are created the first byte (initially 0) of the
+     * according file in this structure is replaced with the index to
+     * the {@link #efFiles}, where the reference to the file array
+     * is stored.  
+     */
     byte[] fileStructure = null;
 
     private short[] fileStructureIndex;
