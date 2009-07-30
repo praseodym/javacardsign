@@ -26,6 +26,12 @@ import java.io.InputStream;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 ElementaryFileObjectDirectory objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class ElementaryFileObjectDirectory {
 
     private ObjectDirectoryEntry[] entries;

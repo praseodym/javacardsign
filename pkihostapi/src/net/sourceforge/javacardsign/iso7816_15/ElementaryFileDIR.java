@@ -36,6 +36,12 @@ import org.bouncycastle.asn1.DERTags;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 ElementaryFileDIR objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class ElementaryFileDIR {
 
     private byte[] aid;

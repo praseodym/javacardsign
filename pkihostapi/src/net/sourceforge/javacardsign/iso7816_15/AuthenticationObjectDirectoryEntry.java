@@ -31,6 +31,12 @@ import org.bouncycastle.asn1.DERTaggedObject;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 AuthenticationObjectDirectoryEntry objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class AuthenticationObjectDirectoryEntry {
 
     private CommonObjectAttributes coa;
