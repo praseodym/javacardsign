@@ -56,35 +56,38 @@ import net.sourceforge.scuba.smartcards.CardServiceException;
  * Personalisation service for our PKI applet.
  * 
  * @author Wojciech Mostowski <woj@cs.ru.nl>
- *
+ * 
  */
 public class PKIPersoService extends PKIService {
 
-    /** Default PUC */ 
+    /** Default PUC */
     public static final String DEFAULT_PUC = "0123456789012345";
 
     /** Additional APDUs needed for personalisation */
     static final byte INS_WRITEBINARY = (byte) 0xD0;
+
     static final byte INS_CREATEFILE = (byte) 0xE0;
 
     /** File IDs for ceriticates */
     public static int CA_CERT_FID = 0x4101;
+
     public static int USER_AUTH_CERT_FID = 0x4102;
+
     public static int USER_SIGN_CERT_FID = 0x4103;
+
     public static int USER_DEC_CERT_FID = 0x4104;
 
-    /** The data structure hierarchical file system for the file system
-     *  in our applet. The data is as follows, concatenated in sequence:
-     *  
-     *  byte 0: -1/0   -1 for DF, 0 for EF
-     *  byte 1, 2: fid msb, fid lsb
-     *  byte 3: index to the parent in this array, -1 of root node
-     *  byte 4: for EF the SFI of this file
-     *          for DF number of children nodes, the list of indexes to the children follow
-     *  
+    /**
+     * The data structure hierarchical file system for the file system in our
+     * applet. The data is as follows, concatenated in sequence:
+     * 
+     * byte 0: -1/0 -1 for DF, 0 for EF byte 1, 2: fid msb, fid lsb byte 3:
+     * index to the parent in this array, -1 of root node byte 4: for EF the SFI
+     * of this file for DF number of children nodes, the list of indexes to the
+     * children follow
+     * 
      */
-    public static final byte[] fileStructure = {
-    		-1, 0x3F, 0x00, -1, 2, 7, 12, // MF
+    public static final byte[] fileStructure = { -1, 0x3F, 0x00, -1, 2, 7, 12, // MF
             0, 0x2F, 0x00, 0, 0x1E, // EF.DIR
             -1, 0x50, 0x15, 0, 9, 26, 31, 36, 41, 46, 51, 56, 61, 66, // DF.CIA
             0, 0x50, 0x32, 12, 0x12, // EF.CIAInfo
@@ -104,9 +107,13 @@ public class PKIPersoService extends PKIService {
     }
 
     /**
-     * Set the historical bytes on the card. The PKI applet needs to be default selectable for that.
-     * @param histBytes the array with historical bytes to be set
-     * @throws CardServiceException on error
+     * Set the historical bytes on the card. The PKI applet needs to be default
+     * selectable for that.
+     * 
+     * @param histBytes
+     *            the array with historical bytes to be set
+     * @throws CardServiceException
+     *             on error
      */
     public void setHistoricalBytes(byte[] histBytes)
             throws CardServiceException {
@@ -122,7 +129,9 @@ public class PKIPersoService extends PKIService {
 
     /**
      * Set the default PUC on the card.
-     * @throws CardServiceException on error
+     * 
+     * @throws CardServiceException
+     *             on error
      */
     public void setPUC() throws CardServiceException {
         setPUC(DEFAULT_PUC);
@@ -130,8 +139,11 @@ public class PKIPersoService extends PKIService {
 
     /**
      * Set the given PUC on the card.
-     * @param puc the PUC string 
-     * @throws CardServiceException on errors
+     * 
+     * @param puc
+     *            the PUC string
+     * @throws CardServiceException
+     *             on errors
      */
     public void setPUC(String puc) throws CardServiceException {
         byte[] apdu = new byte[6 + puc.length()];
@@ -148,11 +160,12 @@ public class PKIPersoService extends PKIService {
 
     /**
      * Set the personalisation state of the applet.
-     * @param state the state, valid values are:
-     *          1 initial
-     *          2 prepersonalised (keys, certs loaded, no PIN set)
-     *          3 personalised
-     * @throws CardServiceException on error
+     * 
+     * @param state
+     *            the state, valid values are: 1 initial 2 prepersonalised
+     *            (keys, certs loaded, no PIN set) 3 personalised
+     * @throws CardServiceException
+     *             on error
      */
     public void setState(byte state) throws CardServiceException {
         byte[] apdu = new byte[5];
@@ -166,34 +179,48 @@ public class PKIPersoService extends PKIService {
     }
 
     /**
-     * Create a file in the applet. Note that the file system structure has to be established first.
-     * @param fid the ID of the file to create
-     * @param length the required length of the file
-     * @param pin whether the reading of the file should be PIN protected
-     * @throws CardServiceException on error
+     * Create a file in the applet. Note that the file system structure has to
+     * be established first.
+     * 
+     * @param fid
+     *            the ID of the file to create
+     * @param length
+     *            the required length of the file
+     * @param pin
+     *            whether the reading of the file should be PIN protected
+     * @throws CardServiceException
+     *             on error
      */
     public void createFile(int fid, int length, boolean pin)
-    throws CardServiceException {
-byte[] apdu = new byte[10];
-apdu[1] = INS_CREATEFILE;
-apdu[4] = 5;
-apdu[5] = (byte) (fid >> 8);
-apdu[6] = (byte) (fid & 0xFF);
-apdu[7] = (byte) (length >> 8);
-apdu[8] = (byte) (length & 0xFF);
-apdu[9] = (byte) (pin ? 0x01 : 0x00);
-CommandAPDU c = new CommandAPDU(apdu);
-ResponseAPDU r = service.transmit(c);
-checkSW(r, "createFile failed: ");
-}
+            throws CardServiceException {
+        byte[] apdu = new byte[10];
+        apdu[1] = INS_CREATEFILE;
+        apdu[4] = 5;
+        apdu[5] = (byte) (fid >> 8);
+        apdu[6] = (byte) (fid & 0xFF);
+        apdu[7] = (byte) (length >> 8);
+        apdu[8] = (byte) (length & 0xFF);
+        apdu[9] = (byte) (pin ? 0x01 : 0x00);
+        CommandAPDU c = new CommandAPDU(apdu);
+        ResponseAPDU r = service.transmit(c);
+        checkSW(r, "createFile failed: ");
+    }
 
     /**
-     * Write a piece of data to the file in the applet.
-     * @param data the data to be written array
-     * @param dOffset offset to that array
-     * @param dLen length of the data to be written
-     * @param fOffset offset in the file in the applet
-     * @throws CardServiceException on error
+     * Write a piece of data to the file in the applet. Note: for most of the
+     * files that we write one call is sufficient (the files are small). For
+     * bigger files a sequence is needed, eg. for certificate files.
+     * 
+     * @param data
+     *            the data to be written array
+     * @param dOffset
+     *            offset to that array
+     * @param dLen
+     *            length of the data to be written
+     * @param fOffset
+     *            offset in the file in the applet
+     * @throws CardServiceException
+     *             on error
      */
     public void writeFile(byte[] data, short dOffset, byte dLen, short fOffset)
             throws CardServiceException {
@@ -208,7 +235,36 @@ checkSW(r, "createFile failed: ");
         checkSW(r, "writeFile failed: ");
     }
 
-
+    /**
+     * Initialises the applet data and files. After this call the applet is in
+     * prepersonalised state (2). The file contents according to ISO7816-15
+     * structres are created and put into corresponding files on the card.
+     * 
+     * @param caCert
+     *            CA certificate
+     * @param userAuthCertificate
+     *            User authentication certificate
+     * @param userSignCertificate
+     *            User signing certificate
+     * @param userDecCertificate
+     *            User decryption certificate
+     * @param authKey
+     *            the user private key for authentication
+     * @param signKey
+     *            the user private key for signing
+     * @param decKey
+     *            the user private key for decryption
+     * @param authKeyId
+     *            the user authentication key ID
+     * @param signKeyId
+     *            the user signing key ID
+     * @param decKeyId
+     *            the user decryption key ID
+     * @param pucData
+     *            the PUC data
+     * @throws CardServiceException
+     *             on errors
+     */
     public void initializeApplet(X509Certificate caCert,
             X509Certificate userAuthCertificate,
             X509Certificate userSignCertificate,
@@ -399,6 +455,17 @@ checkSW(r, "createFile failed: ");
         }
     }
 
+    /**
+     * Creates the file structure in the applet. Note that this does not create
+     * the file arrays in the card, only informs the applet about the intended
+     * file structure (the file system tree and file IDs)
+     * 
+     * @param fs
+     *            the array with the file structure information, see
+     *            {@link #fileStructure}.
+     * @throws CardServiceException
+     *             on errors
+     */
     private void createFileStructure(byte[] fs) throws CardServiceException {
         byte[] apdu = new byte[5 + fs.length];
         apdu[1] = INS_PUTDATA;
@@ -420,6 +487,24 @@ checkSW(r, "createFile failed: ");
         return result;
     }
 
+    /**
+     * Set the private keys in the applet
+     * 
+     * @param authKeyId
+     *            authentication key id
+     * @param signKeyId
+     *            signing key id
+     * @param decKeyId
+     *            decryption key id
+     * @param authKey
+     *            authentication key
+     * @param signKey
+     *            signing key
+     * @param decKey
+     *            decryption key
+     * @throws CardServiceException
+     *             on errors
+     */
     public void setKeys(byte[] authKeyId, byte[] signKeyId, byte[] decKeyId,
             RSAPrivateCrtKey authKey, RSAPrivateCrtKey signKey,
             RSAPrivateCrtKey decKey) throws CardServiceException {
@@ -473,6 +558,19 @@ checkSW(r, "createFile failed: ");
 
     }
 
+    /**
+     * Write one certificate to the file system in the applet. Initialises the
+     * given file.
+     * 
+     * @param fid
+     *            the file ID
+     * @param cert
+     *            the certificate to be written
+     * @param pin
+     *            true if the file should be PIN protected on reading
+     * @throws CardServiceException
+     *             on errors
+     */
     public void setCertificate(int fid, X509Certificate cert, boolean pin)
             throws CardServiceException {
         try {
