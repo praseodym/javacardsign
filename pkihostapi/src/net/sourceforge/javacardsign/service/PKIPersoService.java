@@ -81,10 +81,12 @@ public class PKIPersoService extends PKIService {
      * The data structure hierarchical file system for the file system in our
      * applet. The data is as follows, concatenated in sequence:
      * 
-     * byte 0: -1/0 -1 for DF, 0 for EF byte 1, 2: fid msb, fid lsb byte 3:
-     * index to the parent in this array, -1 of root node byte 4: for EF the SFI
-     * of this file for DF number of children nodes, the list of indexes to the
-     * children follow
+     * byte 0: -1/0 -1 for DF, 0 for EF
+     * byte 1, 2: fid msb, fid lsb
+     * byte 3: index to the parent in this array, -1 of root node
+     * byte 4: for EF the SFI of this file
+     *         for DF number of children nodes, the list of indexes to the
+     *         children follow.
      * 
      */
     public static final byte[] fileStructure = { -1, 0x3F, 0x00, -1, 2, 7, 12, // MF
