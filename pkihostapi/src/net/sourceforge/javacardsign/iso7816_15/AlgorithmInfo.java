@@ -33,6 +33,12 @@ import org.bouncycastle.asn1.DERSequence;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 AlgorigthmInfo objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class AlgorithmInfo {
 
     public static final byte OP_COMPUTE_CHECKSUM = 0;

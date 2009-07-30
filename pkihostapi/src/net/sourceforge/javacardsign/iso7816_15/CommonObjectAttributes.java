@@ -33,6 +33,12 @@ import org.bouncycastle.asn1.DERUTF8String;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 CommonObjectAttributes objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class CommonObjectAttributes {
 
     public static final int FLAG_PRIVATE = 0x00;

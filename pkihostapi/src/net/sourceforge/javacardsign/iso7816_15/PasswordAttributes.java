@@ -33,6 +33,12 @@ import org.bouncycastle.asn1.DERSequence;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 PasswordAttributes objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class PasswordAttributes {
 
     public static final byte FLAG_CASE_SENSITIVE = 0;

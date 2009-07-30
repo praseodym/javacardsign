@@ -32,6 +32,12 @@ import org.bouncycastle.asn1.DERSequence;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+/** 
+ * A structure to store ISO7816-15 CommonKeyAttributes objects.
+ * Does not yet fully implement the specification.
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public class CommonKeyAttributes {
     public static final int USAGE_ENC = 0x00;
 
