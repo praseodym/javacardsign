@@ -332,12 +332,12 @@ public class PKIApplet extends Applet implements ISO7816 {
             offset = unsigned(p2);
         }else{
             ef = fileSystem.getCurrentIndex();
-            if(fileSystem.getCurrentFile(ef) == null) {
+            if(fileSystem.getFile(ef) == null) {
                 ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);                
             }
             offset = Util.makeShort(p1, p2);
         }
-        byte[] file = fileSystem.getCurrentFile(ef);
+        byte[] file = fileSystem.getFile(ef);
         if(offset > file.length) {
             ISOException.throwIt(SW_INCORRECT_P1P2);
         }
@@ -841,12 +841,12 @@ public class PKIApplet extends Applet implements ISO7816 {
             offset = unsigned(p2);
         }else{
             ef = fileSystem.getCurrentIndex();
-            if(fileSystem.getCurrentFile(ef) == null) {
+            if(fileSystem.getFile(ef) == null) {
                 ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);                
             }
             offset = Util.makeShort(p1, p2);
         }
-        byte[] file = fileSystem.getCurrentFile(ef);
+        byte[] file = fileSystem.getFile(ef);
         short lc = unsigned(buf[OFFSET_LC]);
         if((short)(offset + lc) > file.length) {
             ISOException.throwIt(SW_WRONG_LENGTH);

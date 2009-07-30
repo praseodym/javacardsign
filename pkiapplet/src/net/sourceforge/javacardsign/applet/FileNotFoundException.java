@@ -21,4 +21,11 @@
 
 package net.sourceforge.javacardsign.applet;
 
-class FileNotFoundException extends Exception {}
+/**
+ * Tagging class for file not found exceptions.
+ * 
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ * 
+ */
+class FileNotFoundException extends Exception {
+}
