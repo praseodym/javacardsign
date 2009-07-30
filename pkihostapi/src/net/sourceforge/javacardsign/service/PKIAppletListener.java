@@ -24,6 +24,12 @@ package net.sourceforge.javacardsign.service;
 
 import net.sourceforge.scuba.smartcards.CardTerminalListener;
 
+/**
+ * A listener interface for PKI applet events
+ * 
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ *
+ */
 public interface PKIAppletListener extends CardTerminalListener {
     void pkiAppletInserted(PKIAppletEvent pe);
 

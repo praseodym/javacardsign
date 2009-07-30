@@ -22,6 +22,9 @@
 
 package net.sourceforge.javacardsign.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
@@ -29,6 +32,12 @@ import net.sourceforge.scuba.smartcards.APDUListener;
 import net.sourceforge.scuba.smartcards.CardService;
 import net.sourceforge.scuba.smartcards.CardServiceException;
 
+/**
+ * High level service for the PKI applet card.
+ * 
+ * @author Wojciech Mostowski <woj@cs.ru.nl>
+ * 
+ */
 public class PKIService extends CardService {
 
     public static final String OID_RSA = "1.2.840.113549.1.1.1";
@@ -65,6 +74,12 @@ public class PKIService extends CardService {
 
     static final byte INS_INTERNALAUTHENTICATE = (byte) 0x88;
 
+    public static final int MSE_AUTH = 1;
+
+    public static final int MSE_SIGN = 2;
+
+    public static final int MSE_DEC = 3;
+
     protected CardService service;
 
     public PKIService() {
@@ -91,6 +106,14 @@ public class PKIService extends CardService {
         }
     }
 
+    /**
+     * Select the file of the given id.
+     * 
+     * @param id
+     *            the id of the file to be selected on the card
+     * @throws CardServiceException
+     *             on errors
+     */
     public void selectFile(short id) throws CardServiceException {
         byte[] apdu = new byte[5 + 3];
         apdu[1] = INS_SELECT;
@@ -103,6 +126,17 @@ public class PKIService extends CardService {
         checkSW(r, "selectFile failed: ");
     }
 
+    /**
+     * Read the currently selected file contents.
+     * 
+     * @param offset
+     *            the offset in the file
+     * @param len
+     *            the number of requested bytes
+     * @return the data read from the card
+     * @throws CardServiceException
+     *             on errors
+     */
     public byte[] readFile(short offset, byte len) throws CardServiceException {
         byte[] apdu = new byte[5];
         apdu[1] = INS_READBINARY;
@@ -122,31 +156,62 @@ public class PKIService extends CardService {
         return r.getData();
     }
 
+    /**
+     * Read the whole file in (select and read file until EOF)
+     * 
+     * @param id
+     *            the id of the file to be read
+     * @return the contents of the file
+     * @throws CardServiceException
+     *             on errors
+     */
     public byte[] readFile(short id) throws CardServiceException {
         return readFile(id, null);
     }
 
+    /**
+     * Read the whole file in (select and read file until EOF)
+     * 
+     * @param id
+     *            the id of the file to be read
+     * @param PIN
+     *            if required by the card to read the given file, can be null
+     * @return the contents of the file
+     * @throws CardServiceException
+     *             on errors
+     */
     public byte[] readFile(short id, byte[] pin) throws CardServiceException {
-        selectFile(id);
-        if (pin != null) {
-            verifyPIN(pin);
-        }
-        short offset = 0;
-        int blockSize = 128;
-        byte[] res1 = new byte[0x7FFF];
-        while (true) {
-            byte[] temp = readFile(offset, (byte) blockSize);
-            System.arraycopy(temp, 0, res1, offset, temp.length);
-            offset += temp.length;
-            if (temp.length < blockSize) {
-                break;
+        try {
+            selectFile(id);
+            if (pin != null) {
+                verifyPIN(pin);
             }
+            short offset = 0;
+            int blockSize = 128;
+            ByteArrayOutputStream collect = new ByteArrayOutputStream();
+            while (true) {
+                byte[] temp = readFile(offset, (byte) blockSize);
+                collect.write(temp);
+                offset += temp.length;
+                if (temp.length < blockSize) {
+                    break;
+                }
+            }
+            return collect.toByteArray();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new CardServiceException(ioe.getMessage());
         }
-        byte[] result = new byte[offset];
-        System.arraycopy(res1, 0, result, 0, offset);
-        return result;
     }
 
+    /**
+     * Verify the user PIN with the card.
+     * 
+     * @param pinData
+     *            the PIN data
+     * @throws CardServiceException
+     *             on unsuccessful PIN verification or error
+     */
     public void verifyPIN(byte[] pinData) throws CardServiceException {
         byte[] apdu = new byte[5 + pinData.length];
         apdu[1] = INS_VERIFY;
@@ -157,6 +222,16 @@ public class PKIService extends CardService {
         checkSW(r, "verifyPIN failed: ");
     }
 
+    /**
+     * Changes the user PIN on the card.
+     * 
+     * @param pucData
+     *            the PUC code data for verification
+     * @param pinData
+     *            the new PIN data
+     * @throws CardServiceException
+     *             on errors (eg. wrong PUC)
+     */
     public void changePIN(byte[] pucData, byte[] pinData)
             throws CardServiceException {
         byte[] apdu = new byte[5 + pucData.length + pinData.length];
@@ -169,6 +244,15 @@ public class PKIService extends CardService {
         checkSW(r, "changePIN failed: ");
     }
 
+    /**
+     * Get a random challange from the card.
+     * 
+     * @param length
+     *            the challenge length
+     * @return the challenge
+     * @throws CardServiceException
+     *             on error
+     */
     public byte[] getChallenge(short length) throws CardServiceException {
         if (length <= 0 || length > 256) {
             throw new IllegalArgumentException(
@@ -183,48 +267,70 @@ public class PKIService extends CardService {
         return r.getData();
     }
 
-    public static final int MSE_AUTH = 1;
-
-    public static final int MSE_SIGN = 2;
-
-    public static final int MSE_DEC = 3;
-
+    /**
+     * Manage security environment - prepare the card for the upcoming cipher
+     * operation.
+     * 
+     * @param mode
+     *            MSE_AUTH, MSE_SIGN, or MSE_DEC
+     * @param keyId
+     *            the id of the key on the card. A valid keyId can be read from
+     *            the card's private key directory file (EF.PrKD)
+     * @param algSpec
+     *            the byte matching the algorithm specification, a valid should
+     *            be retrievable from the card's file system (the EF.CIAInfo
+     *            file).
+     * 
+     * @throws CardServiceException
+     *             on errors
+     */
     public void manageSecurityEnvironment(int mode, byte[] keyId, byte algSpec)
             throws CardServiceException {
-        byte[] algSpecData = new byte[3];
-        algSpecData[0] = (byte) 0x80;
-        algSpecData[1] = 0x01;
-        algSpecData[2] = algSpec;
-        byte[] apdu = new byte[5 + 2 + keyId.length + algSpecData.length];
-        apdu[1] = INS_MSE;
-        byte p1 = 0x41;
-        byte p2 = 0;
-        switch (mode) {
-        case MSE_AUTH:
-            p2 = (byte) 0xa4;
-            break;
-        case MSE_SIGN:
-            p2 = (byte) 0xb6;
-            break;
-        case MSE_DEC:
-            p2 = (byte) 0xb8;
-            break;
-        default:
-            throw new CardServiceException("Wrong mode.");
+        try {
+            byte p2 = 0;
+            switch (mode) {
+            case MSE_AUTH:
+                p2 = (byte) 0xa4;
+                break;
+            case MSE_SIGN:
+                p2 = (byte) 0xb6;
+                break;
+            case MSE_DEC:
+                p2 = (byte) 0xb8;
+                break;
+            default:
+                throw new CardServiceException("Wrong mode.");
+            }
+            ByteArrayOutputStream apduData = new ByteArrayOutputStream();
+            apduData.write((byte) 0x84);
+            apduData.write((byte) keyId.length);
+            apduData.write(keyId);
+            apduData.write((byte) 0x80);
+            apduData.write(0x01);
+            apduData.write(algSpec);
+            CommandAPDU c = new CommandAPDU(0, INS_MSE, 0x41, p2, apduData
+                    .toByteArray());
+            ResponseAPDU r = service.transmit(c);
+            checkSW(r, "manageSecureEnvironment failed: ");
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new CardServiceException(ioe.getMessage());
         }
-        apdu[2] = p1;
-        apdu[3] = p2;
-        apdu[4] = (byte) (2 + keyId.length + algSpecData.length);
-        apdu[5] = (byte) 0x84;
-        apdu[6] = (byte) keyId.length;
-        System.arraycopy(keyId, 0, apdu, 7, keyId.length);
-        System.arraycopy(algSpecData, 0, apdu, 7 + keyId.length,
-                algSpecData.length);
-        CommandAPDU c = new CommandAPDU(apdu);
-        ResponseAPDU r = service.transmit(c);
-        checkSW(r, "manageSecureEnvironment failed: ");
     }
 
+    /**
+     * Send Perform Security Operation Decipher command(s) to the card. Should
+     * be only possible with the previous MSE command with the MSE_DEC mode. PIN
+     * authentication is usually required immediately prior to PSO commands.
+     * 
+     * @param cipherBlock
+     *            the cipher text to be decrypted
+     * @param expLen
+     *            expeceted length of the response
+     * @return the decrypted plain text
+     * @throws CardServiceException
+     *             on errors
+     */
     public byte[] decipher(byte[] cipherBlock, byte expLen)
             throws CardServiceException {
         byte[] apdu1 = null;
@@ -276,6 +382,19 @@ public class PKIService extends CardService {
         return res;
     }
 
+    /**
+     * Send Perform Security Operation Sign command to the card. Should be only
+     * possible with the previous MSE command with the MSE_SIGN mode. PIN
+     * authentication is usually required immediately prior to PSO commands.
+     * 
+     * @param text
+     *            (the hash of) the plain text to be signed
+     * @param expLen
+     *            expeceted length of the response
+     * @return the signature of the provided text
+     * @throws CardServiceException
+     *             on errors
+     */
     public byte[] computeDigitalSignature(byte[] text, byte expLen)
             throws CardServiceException {
         byte[] apdu = new byte[6 + text.length];
@@ -291,6 +410,19 @@ public class PKIService extends CardService {
         return r.getData();
     }
 
+    /**
+     * Send Internal Authenticate command to the card. Should be only possible
+     * with the previous MSE command with the MSE_AUTH mode. PIN authentication
+     * is usually required immediately prior to Internal Authenticate commands.
+     * 
+     * @param text
+     *            the plain text to be signed
+     * @param expLen
+     *            expeceted length of the response
+     * @return the signature of the plain text
+     * @throws CardServiceException
+     *             on errors
+     */
     public byte[] internalAuthenticate(byte[] text, byte expLen)
             throws CardServiceException {
         byte[] apdu = new byte[6 + text.length];
@@ -304,6 +436,12 @@ public class PKIService extends CardService {
         return r.getData();
     }
 
+    /**
+     * Selects the PKI applet on the card.
+     * 
+     * @throws CardServiceException
+     *             on error
+     */
     public void sendSelectApplet() throws CardServiceException {
         CommandAPDU c = new CommandAPDU(0, 0xA4, (byte) 0x04, (byte) 0x00,
                 PKIAID);
@@ -314,16 +452,25 @@ public class PKIService extends CardService {
 
     }
 
+    /**
+     * Closes this service.
+     */
     public void close() {
         if (service != null) {
             service.close();
         }
     }
 
+    /**
+     * Checks if the service is currently open.
+     */
     public boolean isOpen() {
         return service.isOpen();
     }
 
+    /**
+     * Opens the service.
+     */
     public void open() throws CardServiceException {
         if (!service.isOpen()) {
             service.open();
@@ -331,6 +478,9 @@ public class PKIService extends CardService {
         sendSelectApplet();
     }
 
+    /**
+     * Trasmits the APDU to the card.
+     */
     public ResponseAPDU transmit(CommandAPDU apdu) throws CardServiceException {
         return service.transmit(apdu);
     }
