@@ -21,7 +21,7 @@ e-mail: \url{woj@cs.ru.nl}}
 This document briefly describes the features and the APDU interface of
 the Java Card PKI applet. The applet has been
 developed according to the ISO7816 specification, for information not
-included here please refer to~\cite{}, or contact the author. For this applet
+included here please refer to~\cite{ISO4,ISO8,ISO15}, or contact the author. For this applet
 a certain small selection of options from the ISO standard has been implemented,
 as explained below.
 The source code of the applet and the host library is available from
@@ -39,7 +39,7 @@ The current version of the applet and the host library implements the
 following features:
 \begin{itemize}
 \item An ISO7816 file system for storing PKI files according to the Part 15
-of the ISO7816 specification: private key directory, certificate directory, CA and user certificates, etc.
+of the ISO7816 specification~\cite{ISO15}: private key directory, certificate directory, CA and user certificates, etc.
 It is up to the personalisation software what files will be stored in the applet.
 The applet support hierarchical file system including relative to current file selection or
 selection by path. Reading of each file can be user PIN protected.
@@ -57,7 +57,7 @@ hopefully be lifted in future versions of the applet.} The supported ciphers are
 \item for signing (perform security operation command): RSA signature with PKCS1.5 padding and SHA1 or SHA256 digests and RSA signature 
 with PSS padding with SHA1 digest.
 In all the cases the hashes have to provided ready to the card and in correct format, see APDU interface below,
-i.e.\ the card does not do the hashing, as stipulated by the ISO7816-8~\cite{?} specification.\footnote{%
+i.e.\ the card does not do the hashing, as stipulated by the ISO7816-8~\cite{ISO8} specification.\footnote{%
 Technical remark: because the hashes are provided ready to the card, the Java Card API \texttt{Signature} API
 could not be used. In turn, the PSS padding is done by a manually implemented method in the applet and involves the 
 use of \texttt{MessageDigest.ALG\_SHA}.} The result of the signing operation is the RSA signature.
@@ -589,17 +589,18 @@ has no interaction whatsoever with any other crypto commands in the applet and i
 possible future use.
 
 \begin{thebibliography}{1}
-\bibitem{ISO1} ISO/IEC.  \newblock Personal Identification -- ISO
-  Compliant Driving License -- Part 1.  \newblock Technical report,
-  2009.  \newblock ISO 18013-1.
+\bibitem{ISO4} ISO/IEC.  \newblock Identification cards -- Integrated circuit cards --
+  Part 4: Organization, security and commands for interchange.  \newblock Technical report,
+  2005.  \newblock ISO 7816-4.
 
-\bibitem{ISO2} ISO/IEC.  \newblock Personal Identification -- ISO
-  Compliant Driving License -- Part 2.  \newblock Technical report,
-  2009.  \newblock ISO 18013-2.
+\bibitem{ISO8} ISO/IEC.  \newblock Identification cards -- Integrated circuit cards --
+  Part 8: Commands for security operations.  \newblock Technical report,
+  2004.  \newblock ISO 7816-8.
 
-\bibitem{ISO3} ISO/IEC.  \newblock Personal Identification -- ISO
-  Compliant Driving License -- Part 3.  \newblock Technical report,
-  2009.  \newblock ISO 18013-3.
+\bibitem{ISO15} ISO/IEC.  \newblock Identification cards -- Integrated circuit cards --
+  Part 15: Cryptographic information application. \newblock Technical report,
+  2004.  \newblock ISO 7816-15.
+
 
 \end{thebibliography}
 
