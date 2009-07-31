@@ -132,7 +132,7 @@ public class PKIService extends CardService {
      * @throws CardServiceException
      *             on errors
      */
-    public byte[] readFile(short offset, byte len) throws CardServiceException {
+    public byte[] readFile(short offset, int len) throws CardServiceException {
         CommandAPDU c = new CommandAPDU(0, INS_READBINARY, (byte) (offset >> 8), (byte) (offset & 0xFF), len);
         ResponseAPDU r = service.transmit(c);
         byte[] result = r.getBytes();
@@ -181,7 +181,7 @@ public class PKIService extends CardService {
             int blockSize = 128;
             ByteArrayOutputStream collect = new ByteArrayOutputStream();
             while (true) {
-                byte[] temp = readFile(offset, (byte) blockSize);
+                byte[] temp = readFile(offset, blockSize);
                 collect.write(temp);
                 offset += temp.length;
                 if (temp.length < blockSize) {
@@ -318,7 +318,7 @@ public class PKIService extends CardService {
      * @throws CardServiceException
      *             on errors
      */
-    public byte[] decipher(byte[] cipherBlock, byte expLen)
+    public byte[] decipher(byte[] cipherBlock, int expLen)
             throws CardServiceException {
         ByteArrayOutputStream apduData = new ByteArrayOutputStream();
         CommandAPDU apdu1 = null;
@@ -367,7 +367,7 @@ public class PKIService extends CardService {
      * @throws CardServiceException
      *             on errors
      */
-    public byte[] computeDigitalSignature(byte[] text, byte expLen)
+    public byte[] computeDigitalSignature(byte[] text, int expLen)
             throws CardServiceException {
         CommandAPDU c = new CommandAPDU(0, INS_PSO, (byte) 0x9E, (byte) 0x9A, text, expLen);
         ResponseAPDU r = service.transmit(c);
@@ -388,7 +388,7 @@ public class PKIService extends CardService {
      * @throws CardServiceException
      *             on errors
      */
-    public byte[] internalAuthenticate(byte[] text, byte expLen)
+    public byte[] internalAuthenticate(byte[] text, int expLen)
             throws CardServiceException {
         CommandAPDU c = new CommandAPDU(0, INS_INTERNALAUTHENTICATE, 0, 0, text, expLen);
         ResponseAPDU r = service.transmit(c);

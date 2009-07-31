@@ -472,7 +472,7 @@ public class MainGUI extends JFrame implements ActionListener, APDUListener,
         service.manageSecurityEnvironment(PKIService.MSE_DEC, keyId, (byte) 1);
         service.verifyPIN(p);
 
-        byte[] result = service.decipher(data, (byte) 255);
+        byte[] result = service.decipher(data, 255);
         decPane.setDecipherText(new String(result));
     }
 
@@ -612,9 +612,9 @@ public class MainGUI extends JFrame implements ActionListener, APDUListener,
         service.verifyPIN(p);
         byte[] result = null;
         if (sigPane.getAuth()) {
-            result = service.internalAuthenticate(data, (byte) 128);
+            result = service.internalAuthenticate(data, 128);
         } else {
-            result = service.computeDigitalSignature(data, (byte) 128);
+            result = service.computeDigitalSignature(data, 128);
         }
         sigPane.setSignatureText(Util.byteArrayToString(result, false, 64));
     }
