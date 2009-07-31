@@ -19,92 +19,110 @@ e-mail: \url{woj@cs.ru.nl}}
 \section{Introduction}
 
 This document briefly describes the features and the APDU interface of
-the Java Card PKI applet. The applet has been
-developed according to the ISO7816 specification, for information not
-included here please refer to~\cite{ISO4,ISO8,ISO15}, or contact the author. For this applet
-a certain small selection of options from the ISO standard has been implemented,
-as explained below.
-The source code of the applet and the host library is available from
-the SourceForge SVN repository at:
+the Java Card PKI applet. The applet has been developed according to
+the ISO7816 specification, for information not included here please
+refer to~\cite{ISO4,ISO8,ISO15}, or contact the author. For this
+applet a certain small selection of options from the ISO standard has
+been implemented, as explained below.  The source code of the applet
+and the host library is available from the SourceForge SVN repository
+at:
 \begin{center}
 \url{https://javacardsign.svn.sourceforge.net/svnroot/javacardsign}
 \end{center}
 The SourceForge address of the PKI project is
-\url{http://javacardsign.sourceforge.net}.  The current code in the project
-has been developed mainly by Wojciech Mostowski, \url{woj@cs.ru.nl}.
+\url{http://javacardsign.sourceforge.net}.  The current code in the
+project has been developed mainly by Wojciech Mostowski,
+\url{woj@cs.ru.nl}.
 
 \section{Applet Specifications}
 
 The current version of the applet and the host library implements the
 following features:
 \begin{itemize}
-\item An ISO7816 file system for storing PKI files according to the Part 15
-of the ISO7816 specification~\cite{ISO15}: private key directory, certificate directory, CA and user certificates, etc.
-It is up to the personalisation software what files will be stored in the applet.
-The applet support hierarchical file system including relative to current file selection or
-selection by path. Reading of each file can be user PIN protected.
-\item PIN and PUC user authentication: a 4--20 characters long PIN code, and a 16 characters
-long PUC code. The PUC code lets the user to unblock a forgotten PIN code.
-\item The applet does not support any kind of secure messaging for APDU communication.
-\item The applet only communicates on the contact interface of the card.
-\item Three different cryptographic operations: signing, decryption, and authentication.
-Currently, the supported key type and length is RSA 1024 bit.\footnote{This is an ``artificial'' limitation.
-The applet could support
-keys as long as the underlying Java Card implementation does, but the current personalisation APDU interface limits the 
-amount of data when loading up private keys, which in effect limits the key size to 1024 bits. This limitation will
-hopefully be lifted in future versions of the applet.} The supported ciphers are the following:
+\item An ISO7816 file system for storing PKI files according to the
+  Part 15 of the ISO7816 specification~\cite{ISO15}: private key
+  directory, certificate directory, CA and user certificates, etc.  It
+  is up to the personalisation software what files will be stored in
+  the applet.  The applet support hierarchical file system including
+  relative to current file selection or selection by path. Reading of
+  each file can be user PIN protected.
+\item PIN and PUC user authentication: a 4--20 characters long PIN
+  code, and a 16 characters long PUC code. The PUC code lets the user
+  to unblock a forgotten PIN code.
+\item The applet does not support any kind of secure messaging for
+  APDU communication.
+\item The applet only communicates on the contact interface of the
+  card.
+\item Three different cryptographic operations: signing, decryption,
+  and authentication.  Currently, the supported key type and length is
+  RSA 1024 bit.\footnote{This is an ``artificial'' limitation.  The
+    applet could support keys as long as the underlying Java Card
+    implementation does, but the current personalisation APDU
+    interface limits the amount of data when loading up private keys,
+    which in effect limits the key size to 1024 bits. This limitation
+    will hopefully be lifted in future versions of the applet.} The
+  supported ciphers are the following:
 \begin{itemize}
-\item for signing (perform security operation command): RSA signature with PKCS1.5 padding and SHA1 or SHA256 digests and RSA signature 
-with PSS padding with SHA1 digest.
-In all the cases the hashes have to provided ready to the card and in correct format, see APDU interface below,
-i.e.\ the card does not do the hashing, as stipulated by the ISO7816-8~\cite{ISO8} specification.\footnote{%
-Technical remark: because the hashes are provided ready to the card, the Java Card API \texttt{Signature} API
-could not be used. In turn, the PSS padding is done by a manually implemented method in the applet and involves the 
-use of \texttt{MessageDigest.ALG\_SHA}.} The result of the signing operation is the RSA signature.
-The corresponding Object Identifiers
-for the supported algorithms are:
-\begin{itemize}
-\item OID RSA SHA1 = 1.2.840.113549.1.1.5
-\item OID RSA SHA256 = 1.2.840.113549.1.1.11
-\item OID RSA PSS = 1.2.840.113549.1.1.10
-\item OID SHA1 = 1.3.14.3.2.26
-\item OID SHA256 = 2.16.840.1.101.3.4.2.1
+\item for signing (perform security operation command): RSA signature
+  with PKCS1.5 padding and SHA1 or SHA256 digests and RSA signature
+  with PSS padding with SHA1 digest.  In all the cases the hashes have
+  to provided ready to the card and in correct format, see APDU
+  interface below, i.e.\ the card does not do the hashing, as
+  stipulated by the ISO7816-8~\cite{ISO8} specification.\footnote{%
+    Technical remark: because the hashes are provided ready to the
+    card, the Java Card API \texttt{Signature} API could not be
+    used. In turn, the PSS padding is done by a manually implemented
+    method in the applet and involves the use of
+    \texttt{MessageDigest.ALG\_SHA}.} The result of the signing
+  operation is the RSA signature.  The corresponding Object
+  Identifiers for the supported algorithms are:
+  \begin{itemize}
+    \item OID RSA SHA1 = 1.2.840.113549.1.1.5
+    \item OID RSA SHA256 = 1.2.840.113549.1.1.11
+    \item OID RSA PSS = 1.2.840.113549.1.1.10
+    \item OID SHA1 = 1.3.14.3.2.26
+    \item OID SHA256 = 2.16.840.1.101.3.4.2.1
+  \end{itemize}
+  The Java Card API involved is:
+  \begin{itemize}
+    \item \texttt{Cipher.ALG\_RSA\_PKCS1}
+      \texttt{Cipher.ALG\_RSA\_NOPAD}
+  \end{itemize}
+\item for decryption (perform security operation command): RSA cipher
+  with PKCS1.5 padding. The input for this operation is a valid
+  (i.e.\ properly formatted and with matching length) encrypted RSA
+  block. The result is the decrypted plain text. The corresponding
+  Object Identifier for this operation is:
+  \begin{itemize}
+    \item OID RSA = 1.2.840.113549.1.1.1
+  \end{itemize}
+  The Java Card API involved is:
+  \begin{itemize}
+    \item \texttt{Cipher.ALG\_RSA\_PKCS1}
+  \end{itemize}
+\item for authentication (internal authenticate command): RSA cipher
+  with PKCS1.5 padding. The input for this operation is an arbitrary
+  plain text with in the limits of the supported key length. The
+  output is the encrypted RSA block.  The corresponding Object
+  Identifier for this operation is:
+  \begin{itemize}
+    \item OID RSA = 1.2.840.113549.1.1.1
+  \end{itemize}
+  The Java Card API involved is:
+  \begin{itemize}
+    \item \texttt{Cipher.ALG\_RSA\_PKCS1}
+  \end{itemize}
 \end{itemize}
-The Java Card API involved is:
-\begin{itemize}
-\item \texttt{Cipher.ALG\_RSA\_PKCS1} \texttt{Cipher.ALG\_RSA\_NOPAD} 
-\end{itemize}
-\item for decryption (perform security operation command): RSA cipher with PKCS1.5 padding. The input for this operation is a valid (i.e.\ properly formatted
-and with matching length) encrypted RSA block. The result is the decrypted plain text. The corresponding Object Identifier
-for this operation is:
-\begin{itemize}
-\item OID RSA = 1.2.840.113549.1.1.1
-\end{itemize}
-The Java Card API involved is:
-\begin{itemize}
-\item \texttt{Cipher.ALG\_RSA\_PKCS1}
-\end{itemize}
-\item for authentication (internal authenticate command): RSA cipher with PKCS1.5 padding. The input for this operation
-is an arbitrary plain text with in the limits of the supported key length. The output is the encrypted RSA block.
-The corresponding Object Identifier
-for this operation is:
-\begin{itemize}
-\item OID RSA = 1.2.840.113549.1.1.1
-\end{itemize}
-The Java Card API involved is:
-\begin{itemize}
-\item \texttt{Cipher.ALG\_RSA\_PKCS1}
-\end{itemize}
-\end{itemize}
-\item The AID of the applet is chosen to be \texttt{A000000063504B43532D3135}. The applet does not
-  support\slash provide any FCI information on applet\slash file
-  selection. It is expected that all such information required for the 
-  proper functioning of the host side application is stored in the 
-  file system in the form of ISO7816-15 structures (EF.DIR, EF.CIAInfo, EF.OD, EF.CD, etc.).
-  The host library and application
-  provides an example of initialisation of such structures and 
-  uploading them to the card. It is also suggested that the PKI is
-  made default selectable on the card.
+\item The AID of the applet is chosen to be
+  \texttt{A000000063504B43532D3135}. The applet does not support\slash
+  provide any FCI information on applet\slash file selection. It is
+  expected that all such information required for the proper
+  functioning of the host side application is stored in the file
+  system in the form of ISO7816-15 structures (EF.DIR, EF.CIAInfo,
+  EF.OD, EF.CD, etc.).  The host library and application provides an
+  example of initialisation of such structures and uploading them to
+  the card. It is also suggested that the PKI is made default
+  selectable on the card.
 \end{itemize}
 
 \section{APDU Interface}
@@ -113,34 +131,38 @@ Below the APDUs that the applet supports are briefly described.
 
 \subsection{Initialisation}
 
-After a fresh applet is loaded onto the card, the suggested initialisation
-sequence is the following:
+After a fresh applet is loaded onto the card, the suggested
+initialisation sequence is the following:
 \begin{enumerate}
-\item Select the applet.
-\item Set the state of the applet to \textsf{initial}. Applet is in personalisation mode.
-\item Optionally, change the historical bytes of the card through the applet. For this the 
-applet needs to be default selectable.
-\item Load up the file structure information. \textbf{Note:} this step does
-not create any files, only provides the intended file structure information.
-\item Load up the RSA private keys and their identifiers to the card. Three keys are expected
-in total: for signing, decryption, and authentication.
-\item Create the contents of all the ISO7816-15 structures intended to 
-be on the card (including user certificates matching the keys and CA certificate),
-create the corresponding files in the applet
-and load up the file contents to the card.
-\item Upload the PUC to the card. The PUC is unchangeable.
-\item Set the state of the applet to \textsf{prepersonalised}.
-\item At this stage the personalisation should be finished by setting up the user PIN (PUC has to be provided).
-This will put the card into the \textsf{personalised} state. From this point on the personalised state of the
-applet is not changeable.
+  \item Select the applet.
+  \item Set the state of the applet to \textsf{initial}. Applet is in
+    personalisation mode.
+  \item Optionally, change the historical bytes of the card through
+    the applet. For this the applet needs to be default selectable.
+  \item Load up the file structure information. \textbf{Note:} this
+    step does not create any files, only provides the intended file
+    structure information.
+  \item Load up the RSA private keys and their identifiers to the
+    card. Three keys are expected in total: for signing, decryption,
+    and authentication.
+  \item Create the contents of all the ISO7816-15 structures intended
+    to be on the card (including user certificates matching the keys
+    and CA certificate), create the corresponding files in the applet
+    and load up the file contents to the card.
+  \item Upload the PUC to the card. The PUC is unchangeable.
+  \item Set the state of the applet to \textsf{prepersonalised}.
+  \item At this stage the personalisation should be finished by
+    setting up the user PIN (PUC has to be provided).  This will put
+    the card into the \textsf{personalised} state. From this point on
+    the personalised state of the applet is not changeable.
 \end{enumerate}
 
-The APDUs needed for that are described in the following. 
-Personalisation APDUs are only available in the \textsf{initial} state.
-On error conditions the APDUs may return a variety of abnormal termination
-status words. On success the response APDU is always \texttt{9000}
-with no data; during the personalisation phase
-no status words other than \texttt{9000} should be accepted.
+The APDUs needed for that are described in the following.
+Personalisation APDUs are only available in the \textsf{initial}
+state.  On error conditions the APDUs may return a variety of abnormal
+termination status words. On success the response APDU is always
+\texttt{9000} with no data; during the personalisation phase no status
+words other than \texttt{9000} should be accepted.
 
 \subsubsection{Select Applet}\label{sec:selectaid}
 
@@ -168,8 +190,10 @@ CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \end{tabular}
 \end{flushleft}
-The P2/state can be one of: \texttt{01} initial, \texttt{02} prepersonalised. The state is set to
-personalised \texttt{03} implicitly by the change reference data command when setting the user PIN.
+The P2/state can be one of: \texttt{01} initial, \texttt{02}
+prepersonalised. The state is set to personalised \texttt{03}
+implicitly by the change reference data command when setting the user
+PIN.
 
 \subsubsection{Put Data -- Upload File System Structure Information}
 
@@ -183,9 +207,10 @@ Var & Data with file structure information & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The data field in this APDU contains the file structure information according
-to the following format. It is a list of concatenated single file information byte strings.
-For DF file the following bytes should be present:
+The data field in this APDU contains the file structure information
+according to the following format. It is a list of concatenated single
+file information byte strings.  For DF file the following bytes should
+be present:
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|}
 \hline
@@ -196,8 +221,8 @@ Parent index & \#children & children indexes\\
 \hline
 \end{tabular}
 \end{flushleft}
-The indexes (parent and children) are relative to the beginning of the whole data field. For EF files the 
-format is this:
+The indexes (parent and children) are relative to the beginning of the
+whole data field. For EF files the format is this:
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|}
 \hline
@@ -209,7 +234,8 @@ Parent index & SFI & \\
 \end{tabular}
 \end{flushleft}
 The SFI byte should be \texttt{00} if no SFI is provided for the file.
-And example of a valid file system structure information is this (quote from Java code):
+And example of a valid file system structure information is this
+(quote from Java code):
 \begin{verbatim}
 byte[] fileStructure = {
   -1,            // DF
@@ -263,8 +289,9 @@ Var & Key identifier bytes & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The P1 byte indicates correspondingly: authentication key, signing key, decryption key. The data field
-contains a key identifier, maximum length 16 bytes.
+The P1 byte indicates correspondingly: authentication key, signing
+key, decryption key. The data field contains a key identifier, maximum
+length 16 bytes.
 
 \subsubsection{Put Data -- Upload Private Key}
 
@@ -278,11 +305,13 @@ Var & Corr.\ key part raw data & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The P1 byte indicates correspondingly: authentication key, signing key, decryption key. 
-The P2 byte indicates the part of the raw data of the key in CRT format in the data field, 
-in the following way:\footnote{It is my intention to simplify this key loading to use 
-just the modulus and private exponent, i.e.\ the non-CRT form of the key. This will not be part of
-the current version of the applet though.}
+The P1 byte indicates correspondingly: authentication key, signing
+key, decryption key.  The P2 byte indicates the part of the raw data
+of the key in CRT format in the data field, in the following
+way:\footnote{It is my intention to simplify this key loading to use
+  just the modulus and private exponent, i.e.\ the non-CRT form of the
+  key. This will not be part of the current version of the applet
+  though.}
 \begin{flushleft}
 \begin{tabular}{|l|l|}
 \hline
@@ -319,12 +348,13 @@ PIN byte \\
 \hline
 \end{tabular}
 \end{flushleft}
-where PIN byte indicates whether the file should be PIN protected when reading, \texttt{01} means PIN protect,
-\texttt{00} means free read.
+where PIN byte indicates whether the file should be PIN protected when
+reading, \texttt{01} means PIN protect, \texttt{00} means free read.
 
 \subsubsection{Select File}\label{sec:select}
 
-Absolute, by file identifier \textit{FID} (if none provided, selects MF):
+Absolute, by file identifier \textit{FID} (if none provided, selects
+MF):
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -361,7 +391,8 @@ Absent & \texttt{00} \\
 \end{tabular}
 \end{flushleft}
 
-By path from the current DF (P1 is \texttt{09}) or MF (P1 is \texttt{08}):
+By path from the current DF (P1 is \texttt{09}) or MF (P1 is
+\texttt{08}):
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -386,10 +417,10 @@ Var & Data to be written to the file & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The offset should
-to be less or equal than \texttt{7FFF} (most significant bit set to
-0). If the most significant bit of P1 is set to 1, then the remaining bits
-of P1 indicate SFI, in which case P2 indicates the offset.
+The offset should to be less or equal than \texttt{7FFF} (most
+significant bit set to 0). If the most significant bit of P1 is set to
+1, then the remaining bits of P1 indicate SFI, in which case P2
+indicates the offset.
 
 
 \subsubsection{Change Reference Data -- Set PUC}
@@ -404,8 +435,8 @@ CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \end{tabular}
 \end{flushleft}
-This form of this command is only available when the applet is in the 
-\textsf{initial} state. The data field should contain the ASCII bytes 
+This form of this command is only available when the applet is in the
+\textsf{initial} state. The data field should contain the ASCII bytes
 of the PUC number (i.e.\ from the range \texttt{30}\dots\texttt{39}).
 
 
@@ -421,17 +452,18 @@ CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \end{tabular}
 \end{flushleft}
-The data field should contain the ASCII bytes 
-of the PUC and PIN numbers (i.e.\ from the range \texttt{30}\dots\texttt{39}).
-The PUC length should be always 16, the PIN length should be between 4 and 20.
-If not already in the \textsf{personalised} state the applet state is changed to
-\textsf{personalised} by this command.
+The data field should contain the ASCII bytes of the PUC and PIN
+numbers (i.e.\ from the range \texttt{30}\dots\texttt{39}).  The PUC
+length should be always 16, the PIN length should be between 4 and 20.
+If not already in the \textsf{personalised} state the applet state is
+changed to \textsf{personalised} by this command.
 
 \subsection{Communication after Personalisation}
 
 After the personalisation the following set of ISO7816 commands is
-available for regular applet operation. In the following, if not stated otherwise the commands
-return a status word (\texttt{9000} on success), and no response data.
+available for regular applet operation. In the following, if not
+stated otherwise the commands return a status word (\texttt{9000} on
+success), and no response data.
 
 \subsubsection{Select Applet}
 
@@ -458,15 +490,15 @@ $\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$} &
 \hline
 \end{tabular}
 \end{flushleft}
-The offset should
-to be less or equal than \texttt{7FFF} (most significant bit set to
-0). If the most significant bit of P1 is set to 1, then the remaining bits
-of P1 indicate SFI, in which case P2 indicates the offset.
+The offset should to be less or equal than \texttt{7FFF} (most
+significant bit set to 0). If the most significant bit of P1 is set to
+1, then the remaining bits of P1 indicate SFI, in which case P2
+indicates the offset.
 
-This command will return the number of bytes specified by the Le field in the
-command APDU. If there is no Le bytes available in the file, the available
-bytes will be returned instead and the status word of the response APDU will
-be \texttt{6282} (End of File).
+This command will return the number of bytes specified by the Le field
+in the command APDU. If there is no Le bytes available in the file,
+the available bytes will be returned instead and the status word of
+the response APDU will be \texttt{6282} (End of File).
 
 \subsubsection{Verify PIN}
 
@@ -480,13 +512,14 @@ CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \end{tabular}
 \end{flushleft}
-The data field should contain the ASCII bytes 
-of the PIN number (i.e.\ from the range \texttt{30}\dots\texttt{39}).
+The data field should contain the ASCII bytes of the PIN number
+(i.e.\ from the range \texttt{30}\dots\texttt{39}).
 
 \subsubsection{Manage Security Environment}
 
-This command is used to prepare the upcoming crypto operation (Perform Security Operation or Internal
-Authenticate). Just prior to the actual crypto operation PIN verification is required (every time).
+This command is used to prepare the upcoming crypto operation (Perform
+Security Operation or Internal Authenticate). Just prior to the actual
+crypto operation PIN verification is required (every time).
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -507,16 +540,19 @@ The meaning of P2 is the following:
 \hline
 \end{tabular}
 \end{flushleft}
-The data objects are formed as follows. The key identifier object is a simple TLV structure with
-tag \texttt{84}. The data field of this TLV structure contains the key identifier bytes.
-The algorithm identifier object is a simple TLV structure with tag \texttt{80}. The data field of 
-this TLV structure contains one byte corresponding to the crypto algorithm. Usually, the information about 
-possible values for this byte and corresponding algorithms is included in the EF.CIAInfo
-file on the card.
+The data objects are formed as follows. The key identifier object is a
+simple TLV structure with tag \texttt{84}. The data field of this TLV
+structure contains the key identifier bytes.  The algorithm identifier
+object is a simple TLV structure with tag \texttt{80}. The data field
+of this TLV structure contains one byte corresponding to the crypto
+algorithm. Usually, the information about possible values for this
+byte and corresponding algorithms is included in the EF.CIAInfo file
+on the card.
 
 \subsubsection{Internal Authenticate}
 
-This command requires prior successful Manage Security Environment and Verify PIN commands.
+This command requires prior successful Manage Security Environment and
+Verify PIN commands.
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -527,13 +563,15 @@ Var & The raw data to be signed\slash encrypted & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The maximum length of the command data is limited by the APDU length (255), the length of the RSA key
-to be used and the padding algorithm (key size in bytes minus 11). On success, the data in
-the response APDU is the RSA cipher block.
+The maximum length of the command data is limited by the APDU length
+(255), the length of the RSA key to be used and the padding algorithm
+(key size in bytes minus 11). On success, the data in the response
+APDU is the RSA cipher block.
 
 \subsubsection{Perform Security Operation -- Sign}
 
-This command requires prior successful Manage Security Environment and Verify PIN commands.
+This command requires prior successful Manage Security Environment and
+Verify PIN commands.
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -544,18 +582,20 @@ Var & Hash to be signed & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-Depending on the signing algorithm established by the prior MSE command, the data field 
-is one of the two:
+Depending on the signing algorithm established by the prior MSE
+command, the data field is one of the two:
 \begin{itemize}
-\item A matching (SHA1 or SHA256) ASN.1 wrapped hash data object for RSA PKCS1.5 signing algorithm.
-\item Raw SHA1 hash data for RSA PSS signing algorithm.
+  \item A matching (SHA1 or SHA256) ASN.1 wrapped hash data object for
+    RSA PKCS1.5 signing algorithm.
+  \item Raw SHA1 hash data for RSA PSS signing algorithm.
 \end{itemize}
 On success, the data in the response APDU is the RSA signature block.
 
 \subsubsection{Perform Security Operation -- Decipher}
 
-This command requires prior successful Manage Security Environment and Verify PIN commands.
-This is the only command that supports chaining (CLA=\texttt{10}).
+This command requires prior successful Manage Security Environment and
+Verify PIN commands.  This is the only command that supports chaining
+(CLA=\texttt{10}).
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -566,11 +606,12 @@ Var & The cipher block to be decrypted & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The value of P2 can be any of the three, it does not influence the operation of this command.
-The data field is the (part of) cipher block to be decrypted.
-If the command is not last in the sequence the response APDU is simply the status word.
-After the last command (CLA=\texttt{00}), on success,
-the data in the response APDU is the decrypted plain text without padding.
+The value of P2 can be any of the three, it does not influence the
+operation of this command.  The data field is the (part of) cipher
+block to be decrypted.  If the command is not last in the sequence the
+response APDU is simply the status word.  After the last command
+(CLA=\texttt{00}), on success, the data in the response APDU is the
+decrypted plain text without padding.
 
 \subsubsection{Get Challenge}
 
@@ -584,9 +625,10 @@ CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \end{tabular}
 \end{flushleft}
-This command returns a random challenge from the card of the required length. Currently this command
-has no interaction whatsoever with any other crypto commands in the applet and is implemented for 
-possible future use.
+This command returns a random challenge from the card of the required
+length. Currently this command has no interaction whatsoever with any
+other crypto commands in the applet and is implemented for possible
+future use.
 
 \begin{thebibliography}{1}
 \bibitem{ISO4} ISO/IEC.  \newblock Identification cards -- Integrated circuit cards --
