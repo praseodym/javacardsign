@@ -1,0 +1,353 @@
+\documentclass{article}
+
+\usepackage{a4wide}
+\usepackage{url}
+
+\begin{document}
+
+\author{Wojciech Mostowski\\
+Radboud University Nijmegen\\
+Department of Computing Science\\
+Nijmegen, the Netherlands\\
+e-mail: \url{woj@cs.ru.nl}}
+
+\title{\textbf{The APDU Interface of the PKI Applet}}
+
+\maketitle
+
+
+\section{Introduction}
+
+This document briefly describes the features and the APDU interface of
+the Java Card PKI applet. The applet has been
+developed according to the ISO7816 specification, for information not
+included here please refer to~\cite{}, or contact the author. For this applet
+a certain small selection of options from the ISO standard has been implemented,
+as explained below.
+The source code of the applet and the host library is available from
+the SourceForge SVN repository at:
+\begin{center}
+\url{https://javacardsign.svn.sourceforge.net/svnroot/javacardsign}
+\end{center}
+The SourceForge address of the PKI project is
+\url{http://javacardsign.sourceforge.net}.  The current code in the project
+has been developed mainly by Wojciech Mostowski, \url{woj@cs.ru.nl}.
+
+\section{Applet Specifications}
+
+The current version of the applet and the host library implements the
+following features:
+\begin{itemize}
+\item An ISO7816 file system for storing PKI files according to the Part 15
+of the ISO7816 specification: private key directory, certificate directory, CA and user certificates, etc.
+It is up to the personalisation software what files will be stored in the applet.
+The applet support hierarchical file system including relative to current file selection or
+selection by path. Reading of each file can be user PIN protected.
+\item PIN and PUC user authentication: a 4--20 characters long PIN code, and a 16 characters
+long PUC code. The PUC code lets the user to unblock a forgotten PIN code.
+\item The applet does not support any kind of secure messaging for APDU communication.
+\item The applet only communicates on the contact interface of the card.
+\item Three different cryptographic operations: signing, decryption, and authentication.
+Currently, the supported key type and length is RSA 1024 bit.\footnote{This is an ``artificial'' limitation.
+The applet could support
+keys as long as the underlying Java Card implementation does, but the current personalisation APDU interface limits the 
+amount of data when loading up private keys, which in effect limits the key size to 1024 bits. This limitation will
+hopefully be lifted in future versions of the applet.} The supported ciphers are the following:
+\begin{itemize}
+\item for signing (perform security operation command): RSA signature with PKCS1.5 padding and SHA1 or SHA256 digests and RSA signature 
+with PSS padding with SHA1 digest.
+In all the cases the hashes have to provided ready to the card and in correct format, see APDU interface below,
+i.e.\ the card does not do the hashing, as stipulated by the ISO7816-8~\cite{?} specification.\footnote{%
+Technical remark: because the hashes are provided ready to the card, the Java Card API \texttt{Signature} API
+could not be used. In turn, the PSS padding is done by a manually implemented method in the applet and involves the 
+use of \texttt{MessageDigest.ALG\_SHA}.} The result of the signing operation is the RSA signature.
+The corresponding Object Identifiers
+for the supported algorithms are:
+\begin{itemize}
+\item OID RSA SHA1 = 1.2.840.113549.1.1.5
+\item OID RSA SHA256 = 1.2.840.113549.1.1.11
+\item OID RSA PSS = 1.2.840.113549.1.1.10
+\item OID SHA1 = 1.3.14.3.2.26
+\item OID SHA256 = 2.16.840.1.101.3.4.2.1
+\end{itemize}
+The Java Card API involved is:
+\begin{itemize}
+\item \texttt{Cipher.ALG\_RSA\_PKCS1} \texttt{Cipher.ALG\_RSA\_NOPAD} 
+\end{itemize}
+\item for decryption (perform security operation command): RSA cipher with PKCS1.5 padding. The input for this operation is a valid (i.e.\ properly formatted
+and with matching length) encrypted RSA block. The result is the decrypted plain text. The corresponding Object Identifier
+for this operation is:
+\begin{itemize}
+\item OID RSA = 1.2.840.113549.1.1.1
+\end{itemize}
+The Java Card API involved is:
+\begin{itemize}
+\item \texttt{Cipher.ALG\_RSA\_PKCS1}
+\end{itemize}
+\item for authentication (internal authenticate command): RSA cipher with PKCS1.5 padding. The input for this operation
+is an arbitrary plain text with in the limits of the supported key length. The output is the encrypted RSA block.
+The corresponding Object Identifier
+for this operation is:
+\begin{itemize}
+\item OID RSA = 1.2.840.113549.1.1.1
+\end{itemize}
+The Java Card API involved is:
+\begin{itemize}
+\item \texttt{Cipher.ALG\_RSA\_PKCS1}
+\end{itemize}
+\end{itemize}
+\item The AID of the applet is chosen to be \texttt{A000000063504B43532D3135}. The applet does not
+  support\slash provide any FCI information on applet\slash file
+  selection. It is expected that all such information required for the 
+  proper functioning of the host side application is stored in the 
+  file system in the form of ISO7816-15 structures (EF.DIR, EF.CIAInfo, EF.OD, EF.CD, etc.).
+  The host library and application
+  provides an example of initialisation of such structures and 
+  uploading them to the card.
+\end{itemize}
+
+\section{APDU Interface}
+
+Below the APDUs that the applet supports are briefly described.
+
+\subsection{Initialisation}
+
+After a fresh applet is loaded onto the card, the suggested initialisation
+sequence is the following:
+\begin{enumerate}
+\item Select the applet.
+\item For all files to be written to the card use the create file APDU
+  to create the file and its permissions on the card, and then use
+  select file and update binary commands to write the data to the
+  file. The applet can hold to up to 18 files.
+\item Upload the Active Authentication private key.
+\item Optionally, for EAP support, upload the CVCA root certificate,
+  the private Chip Authentication ECDH key, and upload the document
+  number to be used during EAP.
+\item Upload the BAP key seed string to generate the static secure
+  messaging keys.
+\item Finally, lock the applet.
+\end{enumerate}
+The APDUs needed for that are described in the following. On error
+conditions the APDUs may return a variety of abnormal termination
+status words. On success the response APDU is always \texttt{9000}
+with no data; during the initialisation phase
+no status words other than \texttt{9000} should be accepted.
+
+\subsubsection{Select Applet}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{A4} & \texttt{04} & \texttt{00} &
+\texttt{07} & AID=\texttt{A0000002480200} & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+
+\subsubsection{Create File}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{E0} & \texttt{00}/\texttt{01} & \texttt{00} &
+\texttt{06} & Data object with file length and FID  & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+P1=\texttt{00} means the file should be BAP protected only,
+P1=\texttt{01} means the file should be EAP protected. 
+\textbf{Note} that the applet will allow \textit{any} file to be EAP protected.
+The data field
+has the following format:
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+\texttt{63} & \texttt{04} &
+$\mathit{Len}_{\mathrm{MSB}}$ & $\mathit{Len}_{\mathrm{LSB}}$ &
+$\mathit{FID}_{\mathrm{MSB}}$ & $\mathit{FID}_{\mathrm{LSB}}$ \\
+\hline
+\end{tabular}
+\end{flushleft}
+where \textit{Len} is the required file length and \textit{FID} is the
+file identifier.
+
+\subsubsection{Select File}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{A4} & \texttt{02} & \texttt{0C} & \texttt{02} &
+$\mathit{FID}_{\mathrm{MSB}}$ $\mathit{FID}_{\mathrm{LSB}}$ & \texttt{00} \\
+\hline
+\end{tabular}
+\end{flushleft}
+where \textit{FID} is the file identifier.
+
+\subsubsection{Update Binary}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{D6} &
+$\mathit{Off}_{\mathrm{MSB}}$ & $\mathit{Off}_{\mathrm{LSB}}$ &
+Var & Data to be written to the file & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+where \textit{Off} is the file offset on the card. The offset should
+to be less or equal than \texttt{7FFF} (most significant bit set to
+0).
+
+\subsubsection{Put Data -- AA Private Key}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{60} &
+Var & TLV encoded RSA private key modulus & Absent \\
+\hline
+\end{tabular}
+
+\medskip
+
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{61} &
+Var & TLV encoded RSA private key exponent & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The data filed in these two APDU is the corresponding raw octet string
+embedded in a simple TLV structure with a corresponding tag:
+\texttt{60} for the modulus, \texttt{61} for the exponent.
+
+\subsubsection{Put Data -- CVCA Root Certificate [Opt]}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{64} &
+Var & TLV encoded CVCA root certificate body & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The data filed in this command is the CVCA root certificate body
+encoded in a TLV structure according to ISO18013 (tag \texttt{7F4E}).
+
+\subsubsection{Put Data -- CA ECDH Private Key [Opt]}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{63} &
+Var & TLV encoded ECDH private key components & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The data filed in this command is the concatenated sequence of all the
+components comprising an ECDH F2M private key.  Each component is
+encoded in its own TLV structure with the following tags. The TLV data
+fields are raw corresponding raw octet strings:
+\begin{flushleft}
+\begin{tabular}{|l|l|}
+\hline
+\texttt{81} & F2M Field Points (P)\\
+\texttt{82} & Curve point A \\
+\texttt{83} & Curve point B\\
+\texttt{84} & The point G\\
+\texttt{85} & The order R\\
+\texttt{86} & The private part S\\
+\texttt{87} & Cofactor K\\
+\hline
+\end{tabular}
+\end{flushleft}
+(These fields match the corresponding set methods in the Java Card
+APIs ECPrivateKey).
+
+\subsubsection{Put Data -- Chip Authentication Document Number SICID [Opt]}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline \texttt{00} & \texttt{DA} & \texttt{00} & \texttt{65} &
+Var & SICID bytes &
+Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The data field of this APDU is the byte representation of the document
+number string.
+
+\subsubsection{Put Data -- BAP Key Seed}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{62} &
+\texttt{10} & The key seed string bytes & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The key seed string for BAP should be 16 (hex \texttt{10}) characters
+long.
+
+\subsubsection{Put Data -- Lock Applet}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{DE} & \texttt{AD} &
+Absent & Absent & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+This command finalises the initialisation phase of the applet.
+
+\subsection{Communication}
+
+After the initialisation the normal ISO18013 compliant communication
+can be started with the applet. After selection of the applet, the BAP
+protocol has to be established (get challenge, and mutual
+authenticate), and then files can be read with select file and read
+binary commands. If the applet has been EAP enabled, then also EAP
+related APDU commands are possible, again according to ISO18013. After
+BAP or EAP active authentication is possible with the internal
+authenticate command.
+
+\begin{thebibliography}{1}
+\bibitem{ISO1} ISO/IEC.  \newblock Personal Identification -- ISO
+  Compliant Driving License -- Part 1.  \newblock Technical report,
+  2009.  \newblock ISO 18013-1.
+
+\bibitem{ISO2} ISO/IEC.  \newblock Personal Identification -- ISO
+  Compliant Driving License -- Part 2.  \newblock Technical report,
+  2009.  \newblock ISO 18013-2.
+
+\bibitem{ISO3} ISO/IEC.  \newblock Personal Identification -- ISO
+  Compliant Driving License -- Part 3.  \newblock Technical report,
+  2009.  \newblock ISO 18013-3.
+
+\end{thebibliography}
+
+\end{document}
