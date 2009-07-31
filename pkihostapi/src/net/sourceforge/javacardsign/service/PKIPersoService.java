@@ -486,7 +486,7 @@ public class PKIPersoService extends PKIService {
         byte[][] keyIds = new byte[][] { authKeyId, signKeyId, decKeyId };
 
         for (int i = 0; i < keyIds.length; i++) {
-            CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, 0x01, (byte) (0x61 + i), keyIds[i]);
+            CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, (byte) (0x61 + i), 0, keyIds[i]);
             ResponseAPDU r = service.transmit(c);
             checkSW(r, "setKeys1 failed: ");
         }
