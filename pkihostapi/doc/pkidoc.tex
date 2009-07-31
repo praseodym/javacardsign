@@ -142,7 +142,7 @@ status words. On success the response APDU is always \texttt{9000}
 with no data; during the personalisation phase
 no status words other than \texttt{9000} should be accepted.
 
-\subsubsection{Select Applet}
+\subsubsection{Select Applet}\label{sec:selectaid}
 
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
@@ -392,8 +392,6 @@ to be less or equal than \texttt{7FFF} (most significant bit set to
 of P1 indicate SFI, in which case P2 indicates the offset.
 
 
-
-
 \subsubsection{Change Reference Data -- Set PUC}
 
 \begin{flushleft}
@@ -410,97 +408,26 @@ This form of this command is only available when the applet is in the
 \textsf{initial} state. The data field should contain the ASCII bytes 
 of the PUC number (i.e.\ from the range \texttt{30}\dots\texttt{39}).
 
-\subsubsection{Put Data -- CVCA Root Certificate [Opt]}
+
+\subsubsection{Change Reference Data -- Set PIN}\label{sec:pin}
 
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{64} &
-Var & TLV encoded CVCA root certificate body & Absent \\
+\texttt{00} & \texttt{24} & \texttt{00} & \texttt{00} &
+\texttt{14}\dots\texttt{24} & PUC data, PIN data & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The data filed in this command is the CVCA root certificate body
-encoded in a TLV structure according to ISO18013 (tag \texttt{7F4E}).
+The data field should contain the ASCII bytes 
+of the PUC and PIN numbers (i.e.\ from the range \texttt{30}\dots\texttt{39}).
+The PUC length should be always 16, the PIN length should be between 4 and 20.
+If not already in the \textsf{personalised} state the applet state is changed to
+\textsf{personalised} by this command.
 
-\subsubsection{Put Data -- CA ECDH Private Key [Opt]}
-
-\begin{flushleft}
-\begin{tabular}{|l|l|l|l|l|l|l|}
-\hline
-CLA & INS & P1 & P2 & Lc & Data & Le \\
-\hline
-\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{63} &
-Var & TLV encoded ECDH private key components & Absent \\
-\hline
-\end{tabular}
-\end{flushleft}
-The data filed in this command is the concatenated sequence of all the
-components comprising an ECDH F2M private key.  Each component is
-encoded in its own TLV structure with the following tags. The TLV data
-fields are raw corresponding raw octet strings:
-\begin{flushleft}
-\begin{tabular}{|l|l|}
-\hline
-\texttt{81} & F2M Field Points (P)\\
-\texttt{82} & Curve point A \\
-\texttt{83} & Curve point B\\
-\texttt{84} & The point G\\
-\texttt{85} & The order R\\
-\texttt{86} & The private part S\\
-\texttt{87} & Cofactor K\\
-\hline
-\end{tabular}
-\end{flushleft}
-(These fields match the corresponding set methods in the Java Card
-APIs ECPrivateKey).
-
-\subsubsection{Put Data -- Chip Authentication Document Number SICID [Opt]}
-
-\begin{flushleft}
-\begin{tabular}{|l|l|l|l|l|l|l|}
-\hline CLA & INS & P1 & P2 & Lc & Data & Le \\
-\hline \texttt{00} & \texttt{DA} & \texttt{00} & \texttt{65} &
-Var & SICID bytes &
-Absent \\
-\hline
-\end{tabular}
-\end{flushleft}
-The data field of this APDU is the byte representation of the document
-number string.
-
-\subsubsection{Put Data -- BAP Key Seed}
-
-\begin{flushleft}
-\begin{tabular}{|l|l|l|l|l|l|l|}
-\hline
-CLA & INS & P1 & P2 & Lc & Data & Le \\
-\hline
-\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{62} &
-\texttt{10} & The key seed string bytes & Absent \\
-\hline
-\end{tabular}
-\end{flushleft}
-The key seed string for BAP should be 16 (hex \texttt{10}) characters
-long.
-
-\subsubsection{Put Data -- Lock Applet}
-
-\begin{flushleft}
-\begin{tabular}{|l|l|l|l|l|l|l|}
-\hline
-CLA & INS & P1 & P2 & Lc & Data & Le \\
-\hline
-\texttt{00} & \texttt{DA} & \texttt{DE} & \texttt{AD} &
-Absent & Absent & Absent \\
-\hline
-\end{tabular}
-\end{flushleft}
-This command finalises the initialisation phase of the applet.
-
-\subsection{Communication}
+\subsection{Communication after Personalisation}
 
 After the initialisation the normal ISO18013 compliant communication
 can be started with the applet. After selection of the applet, the BAP
