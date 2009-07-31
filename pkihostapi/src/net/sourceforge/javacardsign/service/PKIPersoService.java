@@ -205,7 +205,7 @@ public class PKIPersoService extends PKIService {
      * @throws CardServiceException
      *             on error
      */
-    public void writeFile(byte[] data, short dOffset, byte dLen, short fOffset)
+    public void writeFile(byte[] data, short dOffset, int dLen, short fOffset)
             throws CardServiceException {
         ByteArrayOutputStream apduData = new ByteArrayOutputStream();
         apduData.write(data, dOffset, dLen);
@@ -301,7 +301,7 @@ public class PKIPersoService extends PKIService {
             byte[] efPrkDContents = efPrkD.getEncoded();
             createFile(0x4000, efPrkDContents.length, false);
             selectFile((short) 0x4000);
-            writeFile(efPrkDContents, (short) 0, (byte) efPrkDContents.length,
+            writeFile(efPrkDContents, (short) 0, efPrkDContents.length,
                     (short) 0);
 
             CommonObjectAttributes caCcoa = new CommonObjectAttributes(
@@ -346,7 +346,7 @@ public class PKIPersoService extends PKIService {
             byte[] cdContents = cd.getEncoded();
             createFile(0x4100, cdContents.length, false);
             selectFile((short) 0x4100);
-            writeFile(cdContents, (short) 0, (byte) cdContents.length,
+            writeFile(cdContents, (short) 0, cdContents.length,
                     (short) 0);
 
             CommonObjectAttributes pucA = new CommonObjectAttributes("PUC",
@@ -376,7 +376,7 @@ public class PKIPersoService extends PKIService {
             byte[] aodContents = aod.getEncoded();
             createFile(0x4200, aodContents.length, false);
             selectFile((short) 0x4200);
-            writeFile(aodContents, (short) 0, (byte) aodContents.length,
+            writeFile(aodContents, (short) 0, aodContents.length,
                     (short) 0);
             ObjectDirectoryEntry eAOD = new ObjectDirectoryEntry(
                     ObjectDirectoryEntry.TAG_AUTH_OBJECTS, 0x4200);
@@ -389,7 +389,7 @@ public class PKIPersoService extends PKIService {
             byte[] odContents = od.getEncoded();
             createFile(0x5031, odContents.length, false);
             selectFile((short) 0x5031);
-            writeFile(odContents, (short) 0, (byte) odContents.length,
+            writeFile(odContents, (short) 0, odContents.length,
                     (short) 0);
             // TODO: Radboud OID?
             ElementaryFileDIR efDIR = new ElementaryFileDIR(PKIAID,
@@ -398,7 +398,7 @@ public class PKIPersoService extends PKIService {
             byte[] efDirContents = efDIR.getEncoded();
             createFile(0x2F00, efDirContents.length, false);
             selectFile((short) 0x2F00);
-            writeFile(efDirContents, (short) 0, (byte) efDirContents.length,
+            writeFile(efDirContents, (short) 0, efDirContents.length,
                     (short) 0);
 
             AlgorithmInfo al1 = new AlgorithmInfo(1, 1, new byte[] {
@@ -424,7 +424,7 @@ public class PKIPersoService extends PKIService {
             byte[] ciaContents = efCia.getDERObject().getDEREncoded();
             createFile(0x5032, ciaContents.length, false);
             selectFile((short) 0x5032);
-            writeFile(ciaContents, (short) 0, (byte) ciaContents.length,
+            writeFile(ciaContents, (short) 0, ciaContents.length,
                     (short) 0);
 
             setPUC(pucData);
@@ -544,7 +544,7 @@ public class PKIPersoService extends PKIService {
                 if (offset + blockSize > certBytes.length) {
                     blockSize = certBytes.length - offset;
                 }
-                writeFile(certBytes, offset, (byte) blockSize, offset);
+                writeFile(certBytes, offset, blockSize, offset);
                 offset += blockSize;
             }
         } catch (Exception e) {
