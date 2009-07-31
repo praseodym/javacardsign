@@ -164,7 +164,7 @@ CLA & INS & P1 & P2 & Lc & Data & Le \\
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \texttt{00} & \texttt{DA} & \texttt{68} & State &
-Absent & Absent & Absent \\
+\texttt{00} & Absent & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
@@ -258,12 +258,44 @@ Var & Historical bytes & Absent \\
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{DA} & \texttt{68} & State &
-Absent & Absent & Absent \\
+\texttt{00} & \texttt{DA} & \texttt{61}/\texttt{62}/\texttt{63} & \texttt{00} &
+Var & Key identifier bytes & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
+The P1 byte indicates correspondingly: authentication key, signing key, decryption key. The data field
+contains a key identifier, maximum length 16 bytes.
 
+\subsubsection{Put Data -- Upload Private Key}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{DA} & \texttt{64}/\texttt{65}/\texttt{66} & Key part &
+Var & Corr.\ key part raw data & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The P1 byte indicates correspondingly: authentication key, signing key, decryption key. 
+The P2 byte indicates the part of the raw data of the key in CRT format in the data field, 
+in the following way:\footnote{It is my intention to simplify this key loading to use 
+just the modulus and private exponent, i.e.\ the non-CRT form of the key. This will not be part of
+the current version of the applet though.}
+\begin{flushleft}
+\begin{tabular}{|l|l|}
+\hline
+\texttt{81} & public modulus\\
+\texttt{82} & public exponent\\
+\texttt{83} & prime number $P$\\
+\texttt{84} & prime number $Q$\\
+\texttt{85} & prime exponent $P$\\
+\texttt{86} & prime exponent $Q$\\
+\texttt{87} & CRT coefficient\\
+\hline
+\end{tabular}
+\end{flushleft}
 
 \subsubsection{Create File}
 
@@ -272,85 +304,111 @@ Absent & Absent & Absent \\
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{E0} & \texttt{00}/\texttt{01} & \texttt{00} &
-\texttt{06} & Data object with file length and FID  & Absent \\
+\texttt{00} & \texttt{E0} & \texttt{00}} & \texttt{00} &
+\texttt{05} & File FID, File length, PIN  & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-P1=\texttt{00} means the file should be BAP protected only,
-P1=\texttt{01} means the file should be EAP protected. 
-\textbf{Note} that the applet will allow \textit{any} file to be EAP protected.
-The data field
-has the following format:
+The data field has the following format:
 \begin{flushleft}
-\begin{tabular}{|l|l|l|l|l|l|}
+\begin{tabular}{|l|l|l|l|l|}
 \hline
-\texttt{63} & \texttt{04} &
+$\mathit{FID}_{\mathrm{MSB}}$ & $\mathit{FID}_{\mathrm{LSB}}$ &
 $\mathit{Len}_{\mathrm{MSB}}$ & $\mathit{Len}_{\mathrm{LSB}}$ &
-$\mathit{FID}_{\mathrm{MSB}}$ & $\mathit{FID}_{\mathrm{LSB}}$ \\
+PIN byte \\
 \hline
 \end{tabular}
 \end{flushleft}
-where \textit{Len} is the required file length and \textit{FID} is the
-file identifier.
+where PIN byte indicates whether the file should be PIN protected when reading, \texttt{01} means PIN protect,
+\texttt{00} means free read.
 
-\subsubsection{Select File}
+\subsubsection{Select File}\label{sec:select}
 
+Absolute, by file identifier \textit{FID} (if none provided, selects MF):
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{A4} & \texttt{02} & \texttt{0C} & \texttt{02} &
+\texttt{00} & \texttt{A4} & \texttt{00} & \texttt{00} & \texttt{02}/\texttt{00} &
+$\mathit{FID}_{\mathrm{MSB}}$ $\mathit{FID}_{\mathrm{LSB}}$ or Absent & \texttt{00} \\
+\hline
+\end{tabular}
+\end{flushleft}
+
+DF (P1 is \texttt{01}) or EF (P1 is \texttt{02}) under the currently selected file, by file identifier \textit{FID}:
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{A4} & \texttt{01}/\texttt{02} & \texttt{00} & \texttt{02} &
 $\mathit{FID}_{\mathrm{MSB}}$ $\mathit{FID}_{\mathrm{LSB}}$ & \texttt{00} \\
 \hline
 \end{tabular}
 \end{flushleft}
-where \textit{FID} is the file identifier.
 
-\subsubsection{Update Binary}
+
+Parent of the current DF:
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{A4} & \texttt{03} & \texttt{00} & \texttt{00} &
+Absent & \texttt{00} \\
+\hline
+\end{tabular}
+\end{flushleft}
+
+By path from the current DF (P1 is \texttt{09}) or MF (P1 is \texttt{08}):
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{A4} & \texttt{08}/\texttt{09} & \texttt{00} & Var &
+The file path & \texttt{00} \\
+\hline
+\end{tabular}
+\end{flushleft}
+
+\subsubsection{Write Binary}
 
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{D6} &
-$\mathit{Off}_{\mathrm{MSB}}$ & $\mathit{Off}_{\mathrm{LSB}}$ &
+\texttt{00} & \texttt{D0} &
+$\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$} &
 Var & Data to be written to the file & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-where \textit{Off} is the file offset on the card. The offset should
+The offset should
 to be less or equal than \texttt{7FFF} (most significant bit set to
-0).
+0). If the most significant bit of P1 is set to 1, then the remaining bits
+of P1 indicate SFI, in which case P2 indicates the offset.
 
-\subsubsection{Put Data -- AA Private Key}
+
+
+
+\subsubsection{Change Reference Data -- Set PUC}
 
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{60} &
-Var & TLV encoded RSA private key modulus & Absent \\
-\hline
-\end{tabular}
-
-\medskip
-
-\begin{tabular}{|l|l|l|l|l|l|l|}
-\hline
-CLA & INS & P1 & P2 & Lc & Data & Le \\
-\hline
-\texttt{00} & \texttt{DA} & \texttt{00} & \texttt{61} &
-Var & TLV encoded RSA private key exponent & Absent \\
+\texttt{00} & \texttt{24} & \texttt{01} & \texttt{00} &
+\texttt{10} & PUC data & Absent \\
 \hline
 \end{tabular}
 \end{flushleft}
-The data filed in these two APDU is the corresponding raw octet string
-embedded in a simple TLV structure with a corresponding tag:
-\texttt{60} for the modulus, \texttt{61} for the exponent.
+This form of this command is only available when the applet is in the 
+\textsf{initial} state. The data field should contain the ASCII bytes 
+of the PUC number (i.e.\ from the range \texttt{30}\dots\texttt{39}).
 
 \subsubsection{Put Data -- CVCA Root Certificate [Opt]}
 
