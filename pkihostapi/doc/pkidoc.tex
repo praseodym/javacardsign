@@ -64,7 +64,7 @@ following features:
   supported ciphers are the following:
 \begin{itemize}
 \item for signing (perform security operation command): RSA signature
-  with PKCS1.5 padding and SHA1 or SHA256 digests and RSA signature
+  with PKCS 1.5 padding and SHA1 or SHA256 digests and RSA signature
   with PSS padding with SHA1 digest.  In all the cases the hashes have
   to provided ready to the card and in correct format, see APDU
   interface below, i.e.\ the card does not do the hashing, as
@@ -89,7 +89,7 @@ following features:
       \texttt{Cipher.ALG\_RSA\_NOPAD}
   \end{itemize}
 \item for decryption (perform security operation command): RSA cipher
-  with PKCS1.5 padding. The input for this operation is a valid
+  with PKCS 1.5 padding. The input for this operation is a valid
   (i.e.\ properly formatted and with matching length) encrypted RSA
   block. The result is the decrypted plain text. The corresponding
   Object Identifier for this operation is:
@@ -101,7 +101,7 @@ following features:
     \item \texttt{Cipher.ALG\_RSA\_PKCS1}
   \end{itemize}
 \item for authentication (internal authenticate command): RSA cipher
-  with PKCS1.5 padding. The input for this operation is an arbitrary
+  with PKCS 1.5\break padding. The input for this operation is an arbitrary
   plain text with in the limits of the supported key length. The
   output is the encrypted RSA block.  The corresponding Object
   Identifier for this operation is:
@@ -216,7 +216,7 @@ be present:
 \hline
 $b_1$ & $b_2$ & $b_3$ & $b_4$ & $b_5$ & $b_6\dots b_n$ \\
 \hline
-\texttt{80} ($-1$) & $\mathrm{FID}_{\mathrm{MSB}$ & $\mathrm{FID}_{\mathrm{LSB}$ & 
+\texttt{80} ($-1$) & $\mathrm{FID}_{\mathrm{MSB}}$ & $\mathrm{FID}_{\mathrm{LSB}}$ & 
 Parent index & \#children & children indexes\\
 \hline
 \end{tabular}
@@ -228,8 +228,8 @@ whole data field. For EF files the format is this:
 \hline
 $b_1$ & $b_2$ & $b_3$ & $b_4$ & $b_5$  \\
 \hline
-\texttt{00} & $\mathrm{FID}_{\mathrm{MSB}$ & $\mathrm{FID}_{\mathrm{LSB}$ & 
-Parent index & SFI & \\
+\texttt{00} & $\mathrm{FID}_{\mathrm{MSB}}$ & $\mathrm{FID}_{\mathrm{LSB}}$ & 
+Parent index & SFI \\
 \hline
 \end{tabular}
 \end{flushleft}
@@ -315,6 +315,8 @@ way:\footnote{It is my intention to simplify this key loading to use
 \begin{flushleft}
 \begin{tabular}{|l|l|}
 \hline
+Tag & Key part \\
+\hline
 \texttt{81} & public modulus\\
 \texttt{82} & public exponent\\
 \texttt{83} & prime number $P$\\
@@ -333,7 +335,7 @@ way:\footnote{It is my intention to simplify this key loading to use
 \hline
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
-\texttt{00} & \texttt{E0} & \texttt{00}} & \texttt{00} &
+\texttt{00} & \texttt{E0} & \texttt{00} & \texttt{00} &
 \texttt{05} & File FID, File length, PIN  & Absent \\
 \hline
 \end{tabular}
@@ -365,7 +367,6 @@ $\mathit{FID}_{\mathrm{MSB}}$ $\mathit{FID}_{\mathrm{LSB}}$ or Absent & \texttt{
 \hline
 \end{tabular}
 \end{flushleft}
-
 DF (P1 is \texttt{01}) or EF (P1 is \texttt{02}) under the currently selected file, by file identifier \textit{FID}:
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
@@ -377,8 +378,6 @@ $\mathit{FID}_{\mathrm{MSB}}$ $\mathit{FID}_{\mathrm{LSB}}$ & \texttt{00} \\
 \hline
 \end{tabular}
 \end{flushleft}
-
-
 Parent of the current DF:
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
@@ -390,7 +389,6 @@ Absent & \texttt{00} \\
 \hline
 \end{tabular}
 \end{flushleft}
-
 By path from the current DF (P1 is \texttt{09}) or MF (P1 is
 \texttt{08}):
 \begin{flushleft}
@@ -412,7 +410,7 @@ The file path & \texttt{00} \\
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \texttt{00} & \texttt{D0} &
-$\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$} &
+$\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$ &
 Var & Data to be written to the file & Absent \\
 \hline
 \end{tabular}
@@ -485,7 +483,7 @@ See~\ref{sec:pin}.
 CLA & INS & P1 & P2 & Lc & Data & Le \\
 \hline
 \texttt{00} & \texttt{B0} &
-$\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$} &
+$\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$ &
 \texttt{00} & Absent & Response length \\
 \hline
 \end{tabular}
@@ -533,6 +531,8 @@ Var & Key Identifier DO, Algorithm Identifier DO & Absent \\
 The meaning of P2 is the following:
 \begin{flushleft}
 \begin{tabular}{|l|l|}
+\hline
+P2 & Security Operation \\
 \hline
 \texttt{A4} & Authentication \\
 \texttt{B6} & Signing \\
@@ -586,7 +586,7 @@ Depending on the signing algorithm established by the prior MSE
 command, the data field is one of the two:
 \begin{itemize}
   \item A matching (SHA1 or SHA256) ASN.1 wrapped hash data object for
-    RSA PKCS1.5 signing algorithm.
+    RSA PKCS 1.5 signing algorithm.
   \item Raw SHA1 hash data for RSA PSS signing algorithm.
 \end{itemize}
 On success, the data in the response APDU is the RSA signature block.
