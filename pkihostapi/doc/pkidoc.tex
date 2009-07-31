@@ -429,14 +429,164 @@ If not already in the \textsf{personalised} state the applet state is changed to
 
 \subsection{Communication after Personalisation}
 
-After the initialisation the normal ISO18013 compliant communication
-can be started with the applet. After selection of the applet, the BAP
-protocol has to be established (get challenge, and mutual
-authenticate), and then files can be read with select file and read
-binary commands. If the applet has been EAP enabled, then also EAP
-related APDU commands are possible, again according to ISO18013. After
-BAP or EAP active authentication is possible with the internal
-authenticate command.
+After the personalisation the following set of ISO7816 commands is
+available for regular applet operation. In the following, if not stated otherwise the commands
+return a status word (\texttt{9000} on success), and no response data.
+
+\subsubsection{Select Applet}
+
+See~\ref{sec:selectaid}.
+
+\subsubsection{Select File}
+
+See~\ref{sec:select}.
+
+\subsubsection{Change Reference Data -- Change PIN}
+
+See~\ref{sec:pin}.
+
+\subsubsection{Read Binary}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{B0} &
+$\mathit{Off}_{\mathrm{MSB}}$ or SFI & $\mathit{Off}_{\mathrm{LSB}}$} &
+\texttt{00} & Absent & Response length \\
+\hline
+\end{tabular}
+\end{flushleft}
+The offset should
+to be less or equal than \texttt{7FFF} (most significant bit set to
+0). If the most significant bit of P1 is set to 1, then the remaining bits
+of P1 indicate SFI, in which case P2 indicates the offset.
+
+This command will return the number of bytes specified by the Le field in the
+command APDU. If there is no Le bytes available in the file, the available
+bytes will be returned instead and the status word of the response APDU will
+be \texttt{6282} (End of File).
+
+\subsubsection{Verify PIN}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{20} & \texttt{00} & \texttt{00} &
+\texttt{04}\dots\texttt{14} & PIN data & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The data field should contain the ASCII bytes 
+of the PIN number (i.e.\ from the range \texttt{30}\dots\texttt{39}).
+
+\subsubsection{Manage Security Environment}
+
+This command is used to prepare the upcoming crypto operation (Perform Security Operation or Internal
+Authenticate). Just prior to the actual crypto operation PIN verification is required (everytime).
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{22} & \texttt{41} & \texttt{A4}/\texttt{B6}/\texttt{B8} &
+Var & Key Identifier DO, Algorithm Identifier DO & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The meaning of P2 is the following:
+\begin{flushleft}
+\begin{tabular}{|l|l|}
+\hline
+\texttt{A4} & Authentication \\
+\texttt{B6} & Signing \\
+\texttt{B8} & Decryption \\
+\hline
+\end{tabular}
+\end{flushleft}
+The data objects are formed as follows. The key identifier object is a simple TLV structure with
+tag \texttt{84}. The data field of this TLV structure contains the key identifier bytes.
+The algorithm identifier object is a simple TLV strucutre with tag \texttt{80}. The data field of 
+this TLV strucutre contains one byte corresponding to the crypto algorithm. Usually, the information about 
+possible values for this byte and corresponding algorigthms is included in the EF.CIAInfo
+file on the card.
+
+\subsubsection{Internal Authenticate}
+
+This command requires prior successful Manage Security Environment and Verify PIN commands.
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{88} & \texttt{00} & \texttt{00} &
+Var & The raw data to be signed\slash encrypted & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The maximum length of the command data is limited by the APDU length (255), the length of the RSA key
+to be used and the padding algorithm (key size in bytes minus 11). On success, the data in
+the response APDU is the RSA cipher block.
+
+\subsubsection{Perform Security Operation -- Sign}
+
+This command requires prior successful Manage Security Environment and Verify PIN commands.
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{2A} & \texttt{9E} & \texttt{9A} &
+Var & Hash to be signed & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+Depending on the signing algorithm established by the prior MSE command, the data field 
+is one of the two:
+\begin{itemize}
+\item A matching (SHA1 or SHA256) ASN.1 wrapped hash data object for RSA PKCS1.5 signing algorithm.
+\item Raw SHA1 hash data for RSA PSS signing algorithm.
+\end{itemize}
+On success, the data in the response APDU is the RSA signature block.
+
+\subsubsection{Perform Security Operation -- Decipher}
+
+This command requires prior successful Manage Security Environment and Verify PIN commands.
+This is the only command that supports chaining (CLA=\texttt{10}).
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00}/\texttt{10} & \texttt{2A} & \texttt{80} & \texttt{82}/\texttt{84}/\texttt{86} &
+Var & The cipher block to be decrypted & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The value of P2 can be any of the three, it does not influence the operation of this command.
+The data field is the (part of) cipher block to be decrypted.
+If the command is not last in the sequence the response APDU is simply the status word.
+After the last command (CLA=\texttt{00}), on success,
+the data in the response APDU is the decrypted plain text without padding.
+
+\subsubsection{Get Challenge}
+
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{84} & \texttt{00} & \texttt{00} &
+\texttt{00} & Absent & Challenge length \\
+\hline
+\end{tabular}
+\end{flushleft}
+This command returns a random challenge from the card of the required length. Currently this command
+has no interaction whatsoever with any other crypto commands in the applet and is implemented for 
+possible future use.
 
 \begin{thebibliography}{1}
 \bibitem{ISO1} ISO/IEC.  \newblock Personal Identification -- ISO
