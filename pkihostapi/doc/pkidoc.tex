@@ -125,14 +125,14 @@ not create any files, only provides the intended file structure information.
 \item Load up the RSA private keys and their identifiers to the card. Three keys are expected
 in total: for signing, decryption, and authentication.
 \item Create the contents of all the ISO7816-15 structures intended to 
-be on the card (including user certficates matching the keys and CA certificate),
+be on the card (including user certificates matching the keys and CA certificate),
 create the corresponding files in the applet
 and load up the file contents to the card.
-\item Upload the PUC to the card. The PUC is unchangable.
+\item Upload the PUC to the card. The PUC is unchangeable.
 \item Set the state of the applet to \textsf{prepersonalised}.
 \item At this stage the personalisation should be finished by setting up the user PIN (PUC has to be provided).
 This will put the card into the \textsf{personalised} state. From this point on the personalised state of the
-applet is not changable.
+applet is not changeable.
 \end{enumerate}
 
 The APDUs needed for that are described in the following. 
@@ -196,7 +196,7 @@ Parent index & \#children & children indexes\\
 \hline
 \end{tabular}
 \end{flushleft}
-The indexes (parent and children) are relative to the begining of the whole data field. For EF files the 
+The indexes (parent and children) are relative to the beginning of the whole data field. For EF files the 
 format is this:
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|}
@@ -486,7 +486,7 @@ of the PIN number (i.e.\ from the range \texttt{30}\dots\texttt{39}).
 \subsubsection{Manage Security Environment}
 
 This command is used to prepare the upcoming crypto operation (Perform Security Operation or Internal
-Authenticate). Just prior to the actual crypto operation PIN verification is required (everytime).
+Authenticate). Just prior to the actual crypto operation PIN verification is required (every time).
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
 \hline
@@ -509,9 +509,9 @@ The meaning of P2 is the following:
 \end{flushleft}
 The data objects are formed as follows. The key identifier object is a simple TLV structure with
 tag \texttt{84}. The data field of this TLV structure contains the key identifier bytes.
-The algorithm identifier object is a simple TLV strucutre with tag \texttt{80}. The data field of 
-this TLV strucutre contains one byte corresponding to the crypto algorithm. Usually, the information about 
-possible values for this byte and corresponding algorigthms is included in the EF.CIAInfo
+The algorithm identifier object is a simple TLV structure with tag \texttt{80}. The data field of 
+this TLV structure contains one byte corresponding to the crypto algorithm. Usually, the information about 
+possible values for this byte and corresponding algorithms is included in the EF.CIAInfo
 file on the card.
 
 \subsubsection{Internal Authenticate}
