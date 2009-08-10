@@ -23,9 +23,16 @@
 package net.sourceforge.javacardsign.service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.spec.KeySpec;
+import java.security.spec.RSAPublicKeySpec;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
@@ -69,6 +76,8 @@ public class PKIPersoService extends PKIService {
 
     static final byte INS_CREATEFILE = (byte) 0xE0;
 
+    static final byte INS_GENERATE = (byte) 0x46;
+
     /** File IDs for ceriticates */
     public static int CA_CERT_FID = 0x4101;
 
@@ -79,15 +88,13 @@ public class PKIPersoService extends PKIService {
     public static int USER_DEC_CERT_FID = 0x4104;
 
     /**
-     * The hierarchical structure for the file system in our
-     * applet. The data is as follows, concatenated in sequence:
+     * The hierarchical structure for the file system in our applet. The data is
+     * as follows, concatenated in sequence:
      * 
-     * byte 0: -1/0 -1 for DF, 0 for EF
-     * byte 1, 2: fid msb, fid lsb
-     * byte 3: index to the parent in this array, -1 of root node
-     * byte 4: for EF the SFI of this file
-     *         for DF number of children nodes, the list of indexes to the
-     *         children follow.
+     * byte 0: -1/0 -1 for DF, 0 for EF byte 1, 2: fid msb, fid lsb byte 3:
+     * index to the parent in this array, -1 of root node byte 4: for EF the SFI
+     * of this file for DF number of children nodes, the list of indexes to the
+     * children follow.
      * 
      */
     public static final byte[] fileStructure = { -1, 0x3F, 0x00, -1, 2, 7, 12, // MF
@@ -144,7 +151,8 @@ public class PKIPersoService extends PKIService {
      *             on errors
      */
     public void setPUC(String puc) throws CardServiceException {
-        CommandAPDU c = new CommandAPDU(0, INS_CHANGEREFERENCEDATA, 0x01, 0x00, puc.getBytes());
+        CommandAPDU c = new CommandAPDU(0, INS_CHANGEREFERENCEDATA, 0x01, 0x00,
+                puc.getBytes());
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "setPUC failed: ");
     }
@@ -179,11 +187,9 @@ public class PKIPersoService extends PKIService {
      */
     public void createFile(int fid, int length, boolean pin)
             throws CardServiceException {
-        byte[] data = {
-          (byte) (fid >> 8), (byte) (fid & 0xFF),
-          (byte) (length >> 8), (byte) (length & 0xFF),
-          (byte) (pin ? 0x01 : 0x00)
-        };
+        byte[] data = { (byte) (fid >> 8), (byte) (fid & 0xFF),
+                (byte) (length >> 8), (byte) (length & 0xFF),
+                (byte) (pin ? 0x01 : 0x00) };
         CommandAPDU c = new CommandAPDU(0, INS_CREATEFILE, 0, 0, data);
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "createFile failed: ");
@@ -209,7 +215,9 @@ public class PKIPersoService extends PKIService {
             throws CardServiceException {
         ByteArrayOutputStream apduData = new ByteArrayOutputStream();
         apduData.write(data, dOffset, dLen);
-        CommandAPDU c = new CommandAPDU(0, INS_WRITEBINARY, (byte) (fOffset >> 8), (byte) (fOffset & 0xFF), apduData.toByteArray());
+        CommandAPDU c = new CommandAPDU(0, INS_WRITEBINARY,
+                (byte) (fOffset >> 8), (byte) (fOffset & 0xFF), apduData
+                        .toByteArray());
         ResponseAPDU r = service.transmit(c);
         checkSW(r, "writeFile failed: ");
     }
@@ -346,8 +354,7 @@ public class PKIPersoService extends PKIService {
             byte[] cdContents = cd.getEncoded();
             createFile(0x4100, cdContents.length, false);
             selectFile((short) 0x4100);
-            writeFile(cdContents, (short) 0, cdContents.length,
-                    (short) 0);
+            writeFile(cdContents, (short) 0, cdContents.length, (short) 0);
 
             CommonObjectAttributes pucA = new CommonObjectAttributes("PUC",
                     new byte[] { CommonObjectAttributes.FLAG_PRIVATE });
@@ -376,8 +383,7 @@ public class PKIPersoService extends PKIService {
             byte[] aodContents = aod.getEncoded();
             createFile(0x4200, aodContents.length, false);
             selectFile((short) 0x4200);
-            writeFile(aodContents, (short) 0, aodContents.length,
-                    (short) 0);
+            writeFile(aodContents, (short) 0, aodContents.length, (short) 0);
             ObjectDirectoryEntry eAOD = new ObjectDirectoryEntry(
                     ObjectDirectoryEntry.TAG_AUTH_OBJECTS, 0x4200);
             ObjectDirectoryEntry ePrkD = new ObjectDirectoryEntry(
@@ -389,8 +395,7 @@ public class PKIPersoService extends PKIService {
             byte[] odContents = od.getEncoded();
             createFile(0x5031, odContents.length, false);
             selectFile((short) 0x5031);
-            writeFile(odContents, (short) 0, odContents.length,
-                    (short) 0);
+            writeFile(odContents, (short) 0, odContents.length, (short) 0);
             // TODO: Radboud OID?
             ElementaryFileDIR efDIR = new ElementaryFileDIR(PKIAID,
                     "PKI Applet", new byte[] { 0x3F, 0x00, 0x50, 0x15 },
@@ -398,8 +403,7 @@ public class PKIPersoService extends PKIService {
             byte[] efDirContents = efDIR.getEncoded();
             createFile(0x2F00, efDirContents.length, false);
             selectFile((short) 0x2F00);
-            writeFile(efDirContents, (short) 0, efDirContents.length,
-                    (short) 0);
+            writeFile(efDirContents, (short) 0, efDirContents.length, (short) 0);
 
             AlgorithmInfo al1 = new AlgorithmInfo(1, 1, new byte[] {
                     AlgorithmInfo.OP_ENCIPHER, AlgorithmInfo.OP_DECIPHER },
@@ -424,8 +428,7 @@ public class PKIPersoService extends PKIService {
             byte[] ciaContents = efCia.getDERObject().getDEREncoded();
             createFile(0x5032, ciaContents.length, false);
             selectFile((short) 0x5032);
-            writeFile(ciaContents, (short) 0, ciaContents.length,
-                    (short) 0);
+            writeFile(ciaContents, (short) 0, ciaContents.length, (short) 0);
 
             setPUC(pucData);
             setState((byte) 2);
@@ -486,7 +489,8 @@ public class PKIPersoService extends PKIService {
         byte[][] keyIds = new byte[][] { authKeyId, signKeyId, decKeyId };
 
         for (int i = 0; i < keyIds.length; i++) {
-            CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, (byte) (0x61 + i), 0, keyIds[i]);
+            CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, (byte) (0x61 + i),
+                    0, keyIds[i]);
             ResponseAPDU r = service.transmit(c);
             checkSW(r, "setKeys1 failed: ");
         }
@@ -511,12 +515,114 @@ public class PKIPersoService extends PKIService {
         for (int keyId = 0; keyId < 3; keyId++) {
             for (int keyPart = 0; keyPart < 7; keyPart++) {
                 byte[] keyData = keys[keyId][keyPart];
-                CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, (byte) (keyId + 0x64), (byte) (keyPart + 0x81), keyData);
+                CommandAPDU c = new CommandAPDU(0, INS_PUTDATA,
+                        (byte) (keyId + 0x64), (byte) (keyPart + 0x81), keyData);
                 ResponseAPDU r = service.transmit(c);
                 checkSW(r, "setKeys2 failed: ");
             }
         }
 
+    }
+
+    /**
+     * Generate the set of private keys on the card.
+     * 
+     * @param authKeyId
+     *            the id of the authentication key
+     * @param signKeyId
+     *            the id of the signing key
+     * @param decKeyId
+     *            the id of the decryption key
+     * @return the map with the corresponding public keys indexed by the key
+     *         identifiers
+     * @throws CardServiceException
+     *             on errors
+     */
+    public Map<byte[], PublicKey> generateKeys(byte[] authKeyId,
+            byte[] signKeyId, byte[] decKeyId) throws CardServiceException {
+        byte[][] keyIds = new byte[][] { authKeyId, signKeyId, decKeyId };
+        int[] modes = { MSE_AUTH, MSE_SIGN, MSE_DEC };
+        Map<byte[], PublicKey> result = new HashMap<byte[], PublicKey>();
+        for (int i = 0; i < keyIds.length; i++) {
+            CommandAPDU c = new CommandAPDU(0, INS_PUTDATA, (byte) (0x61 + i),
+                    0, keyIds[i]);
+            ResponseAPDU r = service.transmit(c);
+            checkSW(r, "generateKeys failed: ");
+        }
+        for (int i = 0; i < keyIds.length; i++) {
+            manageSecurityEnvironment(modes[i], keyIds[i]);
+            result.put(keyIds[i], generateAssymetricKeyPair());
+        }
+        return result;
+    }
+
+    /**
+     * Manage security environment - prepare the card for the upcoming generate
+     * key operation.
+     * 
+     * @param mode
+     *            MSE_AUTH, MSE_SIGN, or MSE_DEC
+     * @param keyId
+     *            the id of the key on the card.
+     * 
+     * @throws CardServiceException
+     *             on errors
+     */
+    public void manageSecurityEnvironment(int mode, byte[] keyId)
+            throws CardServiceException {
+        try {
+            byte p2 = 0;
+            switch (mode) {
+            case MSE_AUTH:
+                p2 = (byte) 0xa4;
+                break;
+            case MSE_SIGN:
+                p2 = (byte) 0xb6;
+                break;
+            case MSE_DEC:
+                p2 = (byte) 0xb8;
+                break;
+            default:
+                throw new CardServiceException("Wrong mode.");
+            }
+            ByteArrayOutputStream apduData = new ByteArrayOutputStream();
+            apduData.write((byte) 0x84);
+            apduData.write((byte) keyId.length);
+            apduData.write(keyId);
+            CommandAPDU c = new CommandAPDU(0, INS_MSE, 0x41, p2, apduData
+                    .toByteArray());
+            ResponseAPDU r = service.transmit(c);
+            checkSW(r, "manageSecureEnvironment failed: ");
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new CardServiceException(ioe.getMessage());
+        }
+    }
+
+    /**
+     * Generate assymetric key pair. This is for the on-card key generation.
+     * 
+     * @return the public key counterpart of the generated private key
+     * @throws CardServiceException
+     *             on errors
+     */
+    public PublicKey generateAssymetricKeyPair() throws CardServiceException {
+        try {
+            CommandAPDU c = new CommandAPDU(0, INS_GENERATE, 0x80, 0);
+            ResponseAPDU r = service.transmit(c);
+            checkSW(r, "manageSecureEnvironment failed: ");
+            byte[] mod = new byte[128];
+            byte[] exp = new byte[3];
+            System.arraycopy(r.getData(), 3, mod, 0, 128);
+            System.arraycopy(r.getData(), 128 + 3 + 2, exp, 0, 3);
+            KeySpec spec = new RSAPublicKeySpec(new BigInteger(1, mod),
+                    new BigInteger(1, exp));
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            return kf.generatePublic(spec);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new CardServiceException(ex.getMessage());
+        }
     }
 
     /**
@@ -553,5 +659,4 @@ public class PKIPersoService extends PKIService {
                     "setCertificate failed: ");
         }
     }
-
 }
