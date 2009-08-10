@@ -123,6 +123,9 @@ following features:
   example of initialisation of such structures and uploading them to
   the card. It is also suggested that the PKI is made default
   selectable on the card.
+\item During the personalisation phase, the on-card key generation is
+  also possible. Currently, the applet can only generate RSA 1024 bit
+  keys.
 \end{itemize}
 
 \section{APDU Interface}
@@ -145,6 +148,10 @@ initialisation sequence is the following:
   \item Load up the RSA private keys and their identifiers to the
     card. Three keys are expected in total: for signing, decryption,
     and authentication.
+  \item Alternatively to the last point, only the key identifiers are loaded
+    onto the card, and then the card is asked to generate the private keys.
+    The corresponding public keys are returned in response to key 
+    generation command.
   \item Create the contents of all the ISO7816-15 structures intended
     to be on the card (including user certificates matching the keys
     and CA certificate), create the corresponding files in the applet
@@ -161,7 +168,9 @@ The APDUs needed for that are described in the following.
 Personalisation APDUs are only available in the \textsf{initial}
 state.  On error conditions the APDUs may return a variety of abnormal
 termination status words. On success the response APDU is always
-\texttt{9000} with no data; during the personalisation phase no status
+\texttt{9000} with no data, with the notable exception of the key 
+generation command, where the public key data is returned.
+During the personalisation phase no status
 words other than \texttt{9000} should be accepted.
 
 \subsubsection{Select Applet}\label{sec:selectaid}
@@ -277,7 +286,7 @@ Var & Historical bytes & Absent \\
 \end{tabular}
 \end{flushleft}
 
-\subsubsection{Put Data -- Setup Private Key Identifier}
+\subsubsection{Put Data -- Setup Private Key Identifier}\label{sec:putdatakeyid}
 
 \begin{flushleft}
 \begin{tabular}{|l|l|l|l|l|l|l|}
@@ -327,6 +336,63 @@ Tag & Key part \\
 \hline
 \end{tabular}
 \end{flushleft}
+
+\subsubsection{Manage Security Environment -- Prepare Key Generation}
+
+This command is used to prepare the upcoming key generation command.
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{22} & \texttt{41} & \texttt{A4}/\texttt{B6}/\texttt{B8} &
+Var & Key Identifier DO & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The meaning of P2 is the following:
+\begin{flushleft}
+\begin{tabular}{|l|l|}
+\hline
+P2 & Security Operation \\
+\hline
+\texttt{A4} & Authentication \\
+\texttt{B6} & Signing \\
+\texttt{B8} & Decryption \\
+\hline
+\end{tabular}
+\end{flushleft}
+The key identifier object is a
+simple TLV structure with tag \texttt{84}. The data field of this TLV
+structure contains the key identifier bytes. The key identifiers have
+to be already known, see Put Data~\ref{sec:putdatakeyid}.
+
+\subsubsection{Generate Asymetric Key Pair}
+
+This command is used to perform the actual key generation. The private key selected with
+MSE will be regenerated. The corresponding public key is returned in the response APDU.
+\begin{flushleft}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+CLA & INS & P1 & P2 & Lc & Data & Le \\
+\hline
+\texttt{00} & \texttt{46} & \texttt{80} & \texttt{00} &
+Absent & Absent & Absent \\
+\hline
+\end{tabular}
+\end{flushleft}
+The response APDU contains two simple TLV structures containg the RSA public key modulus
+and exponent, respectively:
+\begin{flushleft}
+\begin{tabular}{|l|l|}
+\hline
+\texttt{81} & Public modulus \\
+\hline
+\texttt{82} & Public exponent \\
+\hline
+\end{tabular}
+\end{flushleft}
+
 
 \subsubsection{Create File}
 
