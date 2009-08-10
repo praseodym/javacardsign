@@ -30,8 +30,10 @@ import javacard.framework.JCSystem;
 import javacard.framework.Util;
 import javacard.framework.OwnerPIN;
 import javacard.security.KeyBuilder;
+import javacard.security.KeyPair;
 import javacard.security.RSAPrivateCrtKey;
 import javacard.security.MessageDigest;
+import javacard.security.RSAPublicKey;
 import javacard.security.RandomData;
 import javacard.security.CryptoException;
 import javacardx.crypto.Cipher;
@@ -58,6 +60,7 @@ public class PKIApplet extends Applet implements ISO7816 {
     private static final byte INS_WRITEBINARY = (byte)0xD0;
     private static final byte INS_CREATEFILE = (byte)0xE0;
     private static final byte INS_PUTDATA = (byte)0xDA;
+    private static final byte INS_GENERATE_KEY_PAIR = (byte)0x46;
     
     /** Other constants */
     private static final byte MASK_SFI = (byte)0x80; 
@@ -112,7 +115,8 @@ public class PKIApplet extends Applet implements ISO7816 {
     private RSAPrivateCrtKey signKeyPrivate = null;
     private byte signKeyFirstModulusByte = 0;
     private RSAPrivateCrtKey decKeyPrivate = null;
-
+    private RSAPublicKey tempKeyPublic = null;
+   
     private Object[] currentPrivateKey = null;
     private byte[] tmp = null;
 
@@ -151,6 +155,7 @@ public class PKIApplet extends Applet implements ISO7816 {
         authKeyPrivate = (RSAPrivateCrtKey)KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_CRT_PRIVATE, KeyBuilder.LENGTH_RSA_1024, false);
         signKeyPrivate = (RSAPrivateCrtKey)KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_CRT_PRIVATE, KeyBuilder.LENGTH_RSA_1024, false);
         decKeyPrivate = (RSAPrivateCrtKey)KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_CRT_PRIVATE, KeyBuilder.LENGTH_RSA_1024, false);
+        tempKeyPublic = (RSAPublicKey)KeyBuilder.buildKey(KeyBuilder.TYPE_RSA_PUBLIC, KeyBuilder.LENGTH_RSA_1024, false);
         currentPrivateKey = JCSystem.makeTransientObjectArray((short)1, JCSystem.CLEAR_ON_DESELECT);
         expectedDecipherDataLength = JCSystem.makeTransientShortArray((short)1, JCSystem.CLEAR_ON_DESELECT);
         fileSystem = new FileSystem((short)16);
@@ -195,6 +200,9 @@ public class PKIApplet extends Applet implements ISO7816 {
             break;
         case INS_PUTDATA:
             processPutData(apdu);
+            break;
+        case INS_GENERATE_KEY_PAIR:
+            processGenerateAssymetricKeyPair(apdu);
             break;
         case INS_CREATEFILE:
             processCreateFile(apdu);
@@ -487,9 +495,17 @@ public class PKIApplet extends Applet implements ISO7816 {
 
     /** Process the MANAGE SECURITY ENVIRONMENT instruction (0x22).
      *  ISO7816-4, Section 7.5.11 
+     *  
+     *  This command can be also used to prepare key generation.
+     *  In this case the algorithm indication is not required, in
+     *  fact, should not be present. Note that the 
+     *  key identifiers should be already set up with put data before that.
      */
     private void processManageSecurityEnvironment(APDU apdu) {
-        if(state != STATE_PERSONALISED) {
+        boolean forKeyGeneration = false;
+        if(state == STATE_INITIAL) {
+            forKeyGeneration = true;
+        }else if(state == STATE_PREPERSONALISED) {
             ISOException.throwIt(SW_INS_NOT_SUPPORTED);
         }
         pin.reset();
@@ -531,24 +547,30 @@ public class PKIApplet extends Applet implements ISO7816 {
         }
         offset += len;
 
-        if(offset >= lc) {
-            ISOException.throwIt(SW_WRONG_DATA);
-        }
         
         // Algorithm identfier tag
-        len = checkDataObject(buf, offset, lc, (byte)0x80);
-        offset += 2;
-        if(len != 1) {
+        if(!forKeyGeneration) {
+          if(offset >= lc) {
+            ISOException.throwIt(SW_WRONG_DATA);
+          }
+          len = checkDataObject(buf, offset, lc, (byte)0x80);
+          offset += 2;
+          if(len != 1) {
             ISOException.throwIt(SW_WRONG_LENGTH);                                    
-        }
-        byte sAlg = buf[offset++];
-        if(offset != lc) {
-          ISOException.throwIt(SW_WRONG_LENGTH);                        
-        }
+          }
+          byte sAlg = buf[offset++];
+          if(offset != lc) {
+            ISOException.throwIt(SW_WRONG_LENGTH);                        
+          }
           if(sAlg < ALG_AUTH_DEC_RSA || sAlg > ALG_SIGN_RSA_PSS) {
             ISOException.throwIt(SW_WRONG_DATA);
           }
           tmp[TMP_SIGNALG_OFFSET] = sAlg;
+        }else{
+          if(offset != lc) {
+            ISOException.throwIt(SW_WRONG_LENGTH);                        
+          }
+        }
         if(expectedKeyId == authKeyId) {
             currentPrivateKey[0] = authKeyPrivate;
         }else if(expectedKeyId == signKeyId) {
@@ -574,6 +596,50 @@ public class PKIApplet extends Applet implements ISO7816 {
         }
         return len;
     }
+    
+    /**
+     * Generate an assymetric RSA key pair according to ISO7816-8,
+     * Section 5.1. We only support RSA 1024 bit at the moment, and
+     * return data in simple TLV data objects, tags 81 and 82. 
+     * 
+     * Successful MSE command has to be performed prior to this one.
+     */
+    private void processGenerateAssymetricKeyPair(APDU apdu) {
+        // This is only valid in state initial (at the moment)
+        if(state != STATE_INITIAL) {
+            ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+        }
+        byte[] buf = apdu.getBuffer();
+        byte p1 = buf[OFFSET_P1];
+        byte p2 = buf[OFFSET_P2];
+        if(p1 != (byte)0x80 || p2 != (byte)0x00) {
+            ISOException.throwIt(SW_INCORRECT_P1P2);
+        }
+        if(currentPrivateKey[0] == null) {
+            ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
+        }
+        KeyPair pair = new KeyPair(tempKeyPublic, (RSAPrivateCrtKey)currentPrivateKey[0]);
+        pair.genKeyPair();
+        // Sanity check, the KeyPair class should regenerate the keys "in place".
+        if(pair.getPrivate() != currentPrivateKey[0] || pair.getPublic() != tempKeyPublic) {
+            ISOException.throwIt(SW_DATA_INVALID);
+        }
+        apdu.setOutgoing();
+        short len = (short)0;
+        short offset = 0;
+        buf[offset++] = (byte)0x81;
+        len = tempKeyPublic.getModulus(buf, (short)(offset+2));
+        buf[offset++] = (byte)0x81;
+        buf[offset++] = (byte)len;
+        offset += len;
+        buf[offset++] = (byte)0x82;
+        len = tempKeyPublic.getExponent(buf, (short)(offset+1));
+        buf[offset++] = (byte)len;
+        offset += len;
+        apdu.setOutgoingLength(offset);
+        apdu.sendBytes((short)0, offset);
+    }
+    
     
     /**
      * Process the PERFORM SECURITY OPERATION instruction (0x2A).
