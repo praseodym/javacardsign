@@ -785,12 +785,16 @@ public class MainGUI extends JFrame implements ActionListener, APDUListener,
 
     }
 
-    public static void main(String[] args) {
-        PKIAppletManager manager = PKIAppletManager.getInstance();
-        manager.addPKIAppletListener(new MainGUI());
-        CardManager cm = CardManager.getInstance();
-        for (CardTerminal t : cm.getTerminals()) {
-            cm.startPolling(t);
+    public static void main(String[] args) throws IOException {
+        if(args.length > 0) {
+            BatchWriter.main(args);
+        }else{
+            PKIAppletManager manager = PKIAppletManager.getInstance();
+            manager.addPKIAppletListener(new MainGUI());
+            CardManager cm = CardManager.getInstance();
+            for (CardTerminal t : cm.getTerminals()) {
+                cm.startPolling(t);
+            }            
         }
     }
 
