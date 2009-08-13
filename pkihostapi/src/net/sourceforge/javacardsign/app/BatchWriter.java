@@ -75,7 +75,7 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
 
     private byte[] decKeyId = null;
 
-    public static void usage() {
+    private static void usage() {
         System.out.println("Usage:");
         System.out.println("  java -jar pkihost.jar batch <zipfile>");
         System.out.println();
@@ -84,7 +84,7 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
         System.out.println();
     }
 
-    public void takeApart(File zipFile) throws IOException {
+    private void takeApart(File zipFile) throws IOException {
         ZipFile zipIn = new ZipFile(zipFile);
         Enumeration<? extends ZipEntry> entries = zipIn.entries();
         while (entries.hasMoreElements()) {
@@ -116,7 +116,6 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
                     throw new IllegalArgumentException("Wrong PUC length");
                 }
                 puc = new String(data);
-
             } else if (name.equals("authkeyid.bin")) {
                 if (data.length <= 0 || data.length > 16) {
                     throw new IllegalArgumentException(
@@ -179,7 +178,7 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
         }
     }
 
-    public void uploadPKI() {
+    private void uploadPKI() {
         try {
             Object[] data = new Object[] { pin, puc, authKey, signKey, decKey,
                     caCert, authCert, signCert, decCert, authKeyId, signKeyId,
@@ -207,11 +206,11 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
     }
 
     public BatchWriter(String[] args) throws IOException {
-        if (args.length != 1) {
+        if (args.length != 2 || !args[0].equals("batch")) {
             usage();
             System.exit(-1);
         }
-        File zipFile = new File(args[0]);
+        File zipFile = new File(args[1]);
         takeApart(zipFile);
     }
 
