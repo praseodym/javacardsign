@@ -87,7 +87,7 @@ public class BatchWriter implements APDUListener,
     
     public static void usage() {
         System.out.println("Usage:");
-        System.out.println("  java -jar pkihost.jar <zipfile>");
+        System.out.println("  java -jar pkihost.jar batch <zipfile>");
         System.out.println();
         System.out.println("  zipfile contains the required data files for the PKI card");
         System.out.println();
@@ -97,7 +97,8 @@ public class BatchWriter implements APDUListener,
         
     }
     
-    public void uploadPKI() throws IOException {
+    public void uploadPKI() {
+        try {
         Object[] data = new Object[] {
           pin, puc, authKey, signKey, decKey, caCert, authCert, signCert, decCert,
           authKeyId, signKeyId, decKeyId };
@@ -105,6 +106,20 @@ public class BatchWriter implements APDUListener,
             if(o == null) {
                 throw new IOException("Missing required data.");
             }
+        }
+        if(historical != null) {
+            service.setHistoricalBytes(historical);
+        }
+        service.initializeApplet(caCert, authCert, signCert, decCert,
+                authKey, signKey, decKey, authKeyId, signKeyId, decKeyId, puc);
+        service.changePIN(puc.getBytes(), pin.getBytes());
+        
+        System.out.println("Data uploaded.");
+        }catch(Exception ex) {
+            System.out.println("Uploading failed.");
+            ex.printStackTrace();
+            System.exit(-1);
+            
         }
     }
     
@@ -120,12 +135,12 @@ public class BatchWriter implements APDUListener,
 
 
     public static void main(String[] args) throws IOException {
-        PKIAppletManager manager = PKIAppletManager.getInstance();
-        manager.addPKIAppletListener(new BatchWriter(args));
-        CardManager cm = CardManager.getInstance();
-        for (CardTerminal t : cm.getTerminals()) {
-            cm.startPolling(t);
-        }
+      PKIAppletManager manager = PKIAppletManager.getInstance();
+      manager.addPKIAppletListener(new BatchWriter(args));
+      CardManager cm = CardManager.getInstance();
+      for (CardTerminal t : cm.getTerminals()) {
+        cm.startPolling(t);
+      }
     }
 
     public void exchangedAPDU(CommandAPDU capdu, ResponseAPDU rapdu) {
@@ -141,6 +156,7 @@ public class BatchWriter implements APDUListener,
             if (service != null) {
                 service.addAPDUListener(this);
                 uploadPKI();
+                System.exit(0);
             }
         } catch (Exception e) {
             System.out.println("PKI open failed: " + e.toString());
