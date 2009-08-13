@@ -25,7 +25,6 @@ package net.sourceforge.javacardsign.app;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.KeyFactory;
 import java.security.cert.CertificateFactory;
