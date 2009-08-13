@@ -117,6 +117,31 @@ To write new data and personalise a fresh PKI applet:
 
  * The applet is ready to be used (personalised). 
 
+Batch Creating a PKI card
+-------------------------
+
+It is also possible to upload all the required data to the PKI card
+from a ZIP file. To do this run:
+
+  java -jar pkihost.jar batch <zipfile>
+  
+Once a PKI card is detected in the card terminal the data from the
+ZIP files is written to the card. The ZIP file should contain
+the following files:
+
+  - puc.txt - the PUC for the card
+  - pin.txt - the PIN for the card
+  - authkeyid.bin, deckeyid.bin, signkeyid.bin - correponding key
+    identifiers
+  - authkey.der, deckey.der, signkey.der - corresponding private
+    keys in PKCS8/der format
+  - cacert.der, authcert.der, deccert.der, signcert.der - 
+    corresponding certificates in X509/der format
+  - (optional) historical.bin - the historical bytes for the card
+  
+The files folder contains an example of a valid ZIP file.
+
+
 Reading out a PKI card
 ----------------------
 
