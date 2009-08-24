@@ -18,5 +18,6 @@
         <javaElement handleIdentifier="=scuba_smartcards_j2se/src"/>
         <file path="/scuba_smartcards_j2se/LICENSE"/>
         <file path="/scuba_smartcards_j2se/README"/>
+        <javaElement handleIdentifier="=scuba_util/src"/>
     </selectedElements>
 </jardesc>
