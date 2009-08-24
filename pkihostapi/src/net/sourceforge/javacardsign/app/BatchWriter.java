@@ -25,7 +25,9 @@ package net.sourceforge.javacardsign.app;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.security.KeyFactory;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -44,6 +46,7 @@ import net.sourceforge.javacardsign.service.*;
 import net.sourceforge.scuba.smartcards.APDUListener;
 import net.sourceforge.scuba.smartcards.CardEvent;
 import net.sourceforge.scuba.smartcards.CardManager;
+import net.sourceforge.scuba.smartcards.DummyAcceptingCardService;
 
 public class BatchWriter implements APDUListener, PKIAppletListener {
 
@@ -77,9 +80,10 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
 
     private static void usage() {
         System.out.println("Usage:");
-        System.out.println("  java -jar pkihost.jar batch <zipfile>");
+        System.out.println("  java -jar pkihost.jar batch [-apduOut <fileName>] <zipfile>");
         System.out.println();
-        System.out
+        System.out.println("  -apduOut (optional) write the APDU trace to file, do not send it to the card");
+System.out
                 .println("  zipfile contains the required data files for the PKI card");
         System.out.println();
     }
@@ -215,11 +219,29 @@ public class BatchWriter implements APDUListener, PKIAppletListener {
     }
 
     public static void main(String[] args) throws IOException {
-        PKIAppletManager manager = PKIAppletManager.getInstance();
-        manager.addPKIAppletListener(new BatchWriter(args));
-        CardManager cm = CardManager.getInstance();
-        for (CardTerminal t : cm.getTerminals()) {
+        if(args.length == 4 && args[1].equals("-apduOut")) {
+            try {
+              String fname = args[2];
+              PrintStream ps = new PrintStream(new FileOutputStream(fname));
+              PKIService service = new PKIService(new DummyAcceptingCardService(ps));
+              PKIAppletEvent event = new PKIAppletEvent(PKIAppletEvent.INSERTED, service);
+              String[] newArgs = new String[args.length - 2];
+              for(int i=0;i<newArgs.length;i++) {
+                  newArgs[0] = args[0];
+                  newArgs[1] = args[3];
+              }
+              BatchWriter writer = new BatchWriter(newArgs);
+              writer.pkiAppletInserted(event);
+            }catch(Exception ex) {
+                ex.printStackTrace();
+            }
+        }else{
+          PKIAppletManager manager = PKIAppletManager.getInstance();
+          manager.addPKIAppletListener(new BatchWriter(args));
+          CardManager cm = CardManager.getInstance();
+          for (CardTerminal t : cm.getTerminals()) {
             cm.startPolling(t);
+          }
         }
     }
 

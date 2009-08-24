@@ -123,11 +123,15 @@ Batch Creating a PKI card
 It is also possible to upload all the required data to the PKI card
 from a ZIP file. To do this run:
 
-  java -jar pkihost.jar batch <zipfile>
+  java -jar pkihost.jar batch [-apduOut <fileName>] <zipfile>
   
 Once a PKI card is detected in the card terminal the data from the
-ZIP files is written to the card. The ZIP file should contain
-the following files:
+ZIP files is written to the card.  Alternatively the APDU personalisation
+trace can be written to a file with the '-apduOut fileName' option. In
+this case no APDUs are sent to the card, instead they are written to the
+specified file.
+
+The ZIP file should contain the following files:
 
   - puc.txt - the PUC for the card
   - pin.txt - the PIN for the card
