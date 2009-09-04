@@ -27,6 +27,7 @@ import java.io.InputStream;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERInteger;
+import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DERSequence;
@@ -89,7 +90,7 @@ public class AlgorithmInfo {
         DERObjectIdentifier objectId = new DERObjectIdentifier(this.objectId);
         DERInteger algId = new DERInteger(this.algId);
         return new DERSequence(new ASN1Encodable[] { reference,
-                internalIdentifier, operations, objectId, algId });
+                internalIdentifier, new DERNull(), operations, objectId, algId });
     }
 
 }
