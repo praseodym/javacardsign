@@ -1,0 +1,29 @@
+LIBRARY	"edlminidriver"
+EXPORTS
+	CardAcquireContext
+	
+	CardDeleteContext
+	CardQueryCapabilities
+	CardDeleteContainer
+	CardCreateContainer
+	CardGetContainerInfo
+	CardAuthenticatePin
+	CardGetChallenge
+	CardAuthenticateChallenge
+	CardUnblockPin
+	CardChangeAuthenticator
+	CardDeauthenticate
+	CardCreateDirectory
+	CardDeleteDirectory
+	CardCreateFile
+	CardReadFile
+	CardWriteFile
+	CardDeleteFile
+	CardEnumFiles
+	CardGetFileInfo
+	CardQueryFreeSpace
+	CardQueryKeySizes
+
+	CardSignData
+	CardRSADecrypt
+	CardConstructDHAgreement
