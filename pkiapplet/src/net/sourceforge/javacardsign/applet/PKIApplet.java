@@ -74,11 +74,13 @@ public class PKIApplet extends Applet implements ISO7816 {
     private static final byte ALG_SIGN_RSA_PKCS1_SHA1 = (byte)0x02;
     private static final byte ALG_SIGN_RSA_PKCS1_SHA256 = (byte)0x03;
     private static final byte ALG_SIGN_RSA_PSS = (byte)0x04;
+    private static final byte ALG_SIGN_RSA_PKCS1_SHA1MD5 = (byte)0x05;
     
     private static final short MAX_BLOCK_LEN = 256;
     private static final short C_LEN = 4;
     private static final short SHA1_LEN = 20;
     private static final short SHA256_LEN = 32;
+    private static final short SHA1MD5_LEN = 36;
     
     
     /** SW-s not defined in the ISO7816 interface */ 
@@ -562,7 +564,7 @@ public class PKIApplet extends Applet implements ISO7816 {
           if(offset != lc) {
             ISOException.throwIt(SW_WRONG_LENGTH);                        
           }
-          if(sAlg < ALG_AUTH_DEC_RSA || sAlg > ALG_SIGN_RSA_PSS) {
+          if(sAlg < ALG_AUTH_DEC_RSA || sAlg > ALG_SIGN_RSA_PKCS1_SHA1MD5) {
             ISOException.throwIt(SW_WRONG_DATA);
           }
           tmp[TMP_SIGNALG_OFFSET] = sAlg;
@@ -747,7 +749,7 @@ public class PKIApplet extends Applet implements ISO7816 {
 
         RSAPrivateCrtKey privateKey = (RSAPrivateCrtKey)currentPrivateKey[0];
         byte alg = tmp[TMP_SIGNALG_OFFSET];
-        if(privateKey != signKeyPrivate || (alg != ALG_SIGN_RSA_PKCS1_SHA1 && alg != ALG_SIGN_RSA_PKCS1_SHA256 && alg != ALG_SIGN_RSA_PSS)) {
+        if(privateKey != signKeyPrivate || (alg != ALG_SIGN_RSA_PKCS1_SHA1 && alg != ALG_SIGN_RSA_PKCS1_SHA256 && alg != ALG_SIGN_RSA_PSS && alg != ALG_SIGN_RSA_PKCS1_SHA1MD5)) {
             ISOException.throwIt(SW_WRONG_DATA);
         }        
         short offset = OFFSET_CDATA;
@@ -756,14 +758,16 @@ public class PKIApplet extends Applet implements ISO7816 {
             expectedLength = (short)(SHA256_LEN + 17);
         }else if(alg == ALG_SIGN_RSA_PKCS1_SHA1) {
             expectedLength = (short)(SHA1_LEN + 13);
-        }else {
+        }else if(alg == ALG_SIGN_RSA_PSS) {
             expectedLength = SHA1_LEN;
+        }else if(alg == ALG_SIGN_RSA_PKCS1_SHA1MD5) {
+            expectedLength = SHA1MD5_LEN;
         }
         if(lc != expectedLength) {
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
         short sigLen = 0;
-        if(alg == ALG_SIGN_RSA_PKCS1_SHA1 || alg == ALG_SIGN_RSA_PKCS1_SHA256) {
+        if(alg == ALG_SIGN_RSA_PKCS1_SHA1 || alg == ALG_SIGN_RSA_PKCS1_SHA256 || alg == ALG_SIGN_RSA_PKCS1_SHA1MD5) {
             pkcs1Cipher.init(privateKey, Cipher.MODE_ENCRYPT);
             sigLen = pkcs1Cipher.doFinal(buf, offset, lc, tmp, TMP_OFFSET);
             Util.arrayCopyNonAtomic(tmp, TMP_OFFSET, buf, (short)0, sigLen);
