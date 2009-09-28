@@ -108,7 +108,8 @@ ByteVec EDLCard::getChallenge(byte length)
 ByteVec EDLCard::signData(ByteVec data, std::string pin)
 {
 	// manage security environment for SIGN - SHA1 PKCS1
-	byte cmdManageSecurityEnvironment[] = {0x00, 0x22, 0x41, 0xB6, 0x07, 0x84, 0x02, 0x00, 0x02, 0x80, 0x01, 0x02};
+	//byte cmdManageSecurityEnvironment[] = {0x00, 0x22, 0x41, 0xB6, 0x07, 0x84, 0x02, 0x00, 0x02, 0x80, 0x01, 0x02};
+	byte cmdManageSecurityEnvironment[] = {0x00, 0x22, 0x41, 0xB6, 0x07, 0x84, 0x02, 0x00, 0x02, 0x80, 0x01, 0x05};
 	// manage security environment for PSS
 	//byte cmdManageSecurityEnvironment[] = {0x00, 0x22, 0x41, 0xB6, 0x07, 0x84, 0x02, 0x00, 0x02, 0x80, 0x01, 0x04};
 	ByteVec reply = execute ( MAKEVECTOR(cmdManageSecurityEnvironment));
@@ -127,8 +128,9 @@ ByteVec EDLCard::signData(ByteVec data, std::string pin)
 		byte cmdCalculateSignature[] = {0x00, 0x2A, 0x9E, 0x9A};
 		ByteVec cmd = MAKEVECTOR(cmdCalculateSignature);
 
-		cmd.push_back(data.size()+header.size());
-		cmd.insert(cmd.end(), header.begin(), header.end());
+		//cmd.push_back(data.size()+header.size());
+		cmd.push_back(data.size());
+		//cmd.insert(cmd.end(), header.begin(), header.end());
 
 		cmd.insert(cmd.end(), data.begin(), data.end());
 		
