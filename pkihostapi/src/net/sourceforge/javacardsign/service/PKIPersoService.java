@@ -417,13 +417,16 @@ public class PKIPersoService extends PKIService {
             AlgorithmInfo al4 = new AlgorithmInfo(4, 4,
                     new byte[] { AlgorithmInfo.OP_COMPUTE_SIGNATURE },
                     OID_RSA_PSS, (byte) 4);
+            AlgorithmInfo al5 = new AlgorithmInfo(5, 5,
+                    new byte[] { AlgorithmInfo.OP_COMPUTE_SIGNATURE },
+                    OID_RSA, (byte) 5);
 
             ElementaryFileCIAInfo efCia = new ElementaryFileCIAInfo(
                     ElementaryFileCIAInfo.V2, "Radboud", new byte[] {
                             ElementaryFileCIAInfo.CARD_FLAG_READ_ONLY,
                             ElementaryFileCIAInfo.CARD_AUTH_REQUIRED,
                             ElementaryFileCIAInfo.CARD_PRN_GENERATION },
-                    new AlgorithmInfo[] { al1, al2, al3, al4 });
+                    new AlgorithmInfo[] { al1, al2, al3, al4, al5 });
 
             byte[] ciaContents = efCia.getDERObject().getDEREncoded();
             createFile(0x5032, ciaContents.length, false);
