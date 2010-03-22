@@ -18,7 +18,7 @@
     <javac srcdir="${src}" destdir="${build}" source="1.2" target="1.1">
       <classpath>
         <pathelement path="${JAVACARD_HOME}/lib/api.jar"/>
-        <pathelement path="${GP22_HOME}"/>
+        <pathelement path="${GP211_HOME}"/>
       </classpath>
     </javac>
   </target>
@@ -26,7 +26,7 @@
     <java classname="com.sun.javacard.converter.Converter" fork="true" failonerror="true">
       <arg line="-classdir ${build}"/>
       <arg line="-verbose"/>
-      <arg line="-exportpath ${JAVACARD_HOME}/api_export_files:${GP22_HOME}"/>
+      <arg line="-exportpath ${JAVACARD_HOME}/api_export_files:${GP211_HOME}"/>
       <arg line="-out CAP JCA EXP"/>
       <arg line="-applet ${APPLET_AID} ${APPLET_NAME}"/>
       <arg line="${JAVA_PACKAGE} ${PACKAGE_AID} ${VERSION}"/>
