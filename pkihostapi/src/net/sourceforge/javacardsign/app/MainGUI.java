@@ -57,6 +57,7 @@ import javax.swing.JTabbedPane;
 
 import net.sourceforge.javacardsign.service.*;
 
+import net.sourceforge.scuba.smartcards.APDUEvent;
 import net.sourceforge.scuba.smartcards.APDUListener;
 import net.sourceforge.scuba.smartcards.CardEvent;
 import net.sourceforge.scuba.smartcards.CardManager;
@@ -798,8 +799,9 @@ public class MainGUI extends JFrame implements ActionListener, APDUListener,
         }
     }
 
-    public void exchangedAPDU(CommandAPDU capdu, ResponseAPDU rapdu) {
-        apduLog.logCommand(capdu.getBytes());
+    public void exchangedAPDU(APDUEvent apduEvent) {
+        apduLog.logCommand(apduEvent.getCommandAPDU().getBytes());
+        ResponseAPDU rapdu = apduEvent.getResponseAPDU();
         apduLog.logResponse(rapdu.getBytes(), rapdu.getSW() == 0x9000);
     }
 
