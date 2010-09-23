@@ -43,6 +43,7 @@ import javax.smartcardio.ResponseAPDU;
 
 import net.sourceforge.javacardsign.service.*;
 
+import net.sourceforge.scuba.smartcards.APDUEvent;
 import net.sourceforge.scuba.smartcards.APDUListener;
 import net.sourceforge.scuba.smartcards.CardEvent;
 import net.sourceforge.scuba.smartcards.CardManager;
@@ -245,7 +246,9 @@ System.out
         }
     }
 
-    public void exchangedAPDU(CommandAPDU capdu, ResponseAPDU rapdu) {
+    public void exchangedAPDU(APDUEvent apduEvent) {
+        CommandAPDU capdu = apduEvent.getCommandAPDU();
+        ResponseAPDU rapdu = apduEvent.getResponseAPDU();
         System.out.println("C: "
                 + Util.byteArrayToString(capdu.getBytes(), false));
         System.out.println("R: "
