@@ -38,9 +38,7 @@ import net.sourceforge.scuba.smartcards.CardServiceException;
  * @author Wojciech Mostowski <woj@cs.ru.nl>
  * 
  */
-public class PKIService extends CardService<CommandAPDU, ResponseAPDU> {
-
-    private static final long serialVersionUID = 2595941073110546617L;
+public class PKIService extends CardService {
 
     public static final String OID_RSA = "1.2.840.113549.1.1.1";
 
@@ -82,20 +80,20 @@ public class PKIService extends CardService<CommandAPDU, ResponseAPDU> {
 
     public static final int MSE_DEC = 3;
 
-    protected CardService<CommandAPDU, ResponseAPDU> service;
+    protected CardService service;
 
     public PKIService() {
     }
 
-    public PKIService(CardService<CommandAPDU, ResponseAPDU> service) {
+    public PKIService(CardService service) {
         this.service = service;
     }
 
-    public void addAPDUListener(APDUListener<CommandAPDU, ResponseAPDU> l) {
+    public void addAPDUListener(APDUListener l) {
         service.addAPDUListener(l);
     }
 
-    public void removeAPDUListener(APDUListener<CommandAPDU, ResponseAPDU> l) {
+    public void removeAPDUListener(APDUListener l) {
         service.removeAPDUListener(l);
     }
 
