@@ -81,7 +81,7 @@ public class AlgorithmInfo {
         throw new NotImplementedException();
     }
 
-    public DERObject getDERObject() {
+    public DERSequence getDERObject() {
         DERInteger reference = new DERInteger(this.reference);
         DERInteger internalIdentifier = new DERInteger(this.internalIdentifier);
         DERBitString operations = new DERBitString(CommonObjectAttributes

@@ -84,7 +84,7 @@ public class ElementaryFileCIAInfo {
         }
         DERSequence algorithmInfos = new DERSequence(algs);
         return new DERSequence(new ASN1Encodable[] { version, manufacturerId,
-                cardFlags, new DERTaggedObject(2, algorithmInfos) });
+                cardFlags, new DERSequence(), new DERSequence(algorithmInfos) });
     }
 
 }
