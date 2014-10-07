@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="scuba_smartcards_j2se">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/scuba_smartcards_j2se.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,24 @@
+Index: src/net/sourceforge/javacardsign/service/PKIPersoService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/net/sourceforge/javacardsign/service/PKIPersoService.java	(date 1409922216000)
++++ src/net/sourceforge/javacardsign/service/PKIPersoService.java	(revision )
+@@ -99,7 +99,7 @@
+      */
+     public static final byte[] fileStructure = { -1, 0x3F, 0x00, -1, 2, 7, 12, // MF
+             0, 0x2F, 0x00, 0, 0x1E, // EF.DIR
+-            -1, 0x50, 0x15, 0, 9, 26, 31, 36, 41, 46, 51, 56, 61, 66, // DF.CIA
++            -1, 0x50, 0x15, 0, 10, 27, 32, 37, 42, 47, 52, 57, 62, 67, 72, // DF.CIA
+             0, 0x50, 0x32, 12, 0x12, // EF.CIAInfo
+             0, 0x50, 0x31, 12, 0x11, // EF.OD
+             0, 0x42, 0x00, 12, 0x00, // EF.AOD
+@@ -109,6 +109,7 @@
+             0, 0x41, 0x02, 12, 0x00, // EF.UserCert1
+             0, 0x41, 0x03, 12, 0x00, // EF.UserCert2
+             0, 0x41, 0x04, 12, 0x00, // EF.UserCert3
++            0, 0x49, 0x46, 12, 0x00, // OpenSC info file
+     };
+ 
+     public PKIPersoService(CardService service) {
