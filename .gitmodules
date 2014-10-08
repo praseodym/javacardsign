@@ -1,0 +1,3 @@
+[submodule "pkiapplet"]
+	path = pkiapplet
+	url = https://github.com/praseodym/pkiapplet.git
